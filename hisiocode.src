@@ -33,8 +33,10 @@ DOHIDET	STA DRETRY
 	SEI
 	LDA #$01
 	STA CRITIC
-	LDA DUNIT
-	ORA #$30
+	CLC
+	LDA DDEVIC
+	ADC DUNIT
+	ADC #$FF
 	STA CDEVIC
 
 	TSX 
@@ -135,6 +137,7 @@ DOHIDET	STA DRETRY
 	STA AUDF3
 
 ?NOTUR1	
+
 	JSR ?CHKST	; read command frame ACK/NAK
 	JSR ?CLRTIM1	; got ACK, clear timer
 
@@ -144,7 +147,7 @@ DOHIDET	STA DRETRY
 .endif
 
 	BIT MYSPEED
-	BVC ?NOXF	; XF551?
+	BVC ?NOXF	; XF551 / Happy Warp?
 
 	LDA #XFSPD	; yes, set highspeed before DATA
 	STA AUDF3
@@ -200,9 +203,11 @@ DOHIDET	STA DRETRY
 
 	DEC DRETRY	; any more command retries?
 	BEQ ?ENDCMD	; no, we are finished
+	CPY #ERRDEV
+	BEQ ?GODR	; don't fallback speed on command errors
 	LDA #STDSPD	; try it with standard speed this time
 	STA MYSPEED
-	JMP ?DRETLP	; yes, try it again
+?GODR	JMP ?DRETLP	; yes, try it again
 ?ENDCMD	
 
 	LDA #0
@@ -238,8 +243,10 @@ DOHIDET	STA DRETRY
 	BNE ?SND2
 	INC BUFRHI
 	DEC BFENHI
+
 ; wait a litte after sending a full page, needed by some
-; slow drives (?) when sending more than 256 bytes (??)
+; drives when sending more than 256 bytes
+
 	LDX #$E0
 ?WT2	INX 
 	BNE ?WT2
@@ -254,13 +261,6 @@ DOHIDET	STA DRETRY
 	BNE ?WTSND
 	RTS
 
-?CHKST	
-	LDY #$03
-	JSR ?STIMOUT
-	LDA #MSKRECV
-	STA IRQEN
-	BNE ?RDACK	; always
-
 ?GETBLK	LDY #$00
 	STY CHKSUM
 
@@ -269,11 +269,7 @@ DOHIDET	STA DRETRY
 
 ?GETLP	JSR ?GETBYTE
 	STA (BUFRLO),Y
-	; JSR ?ADDSUM
-	CLC 
-	ADC CHKSUM
-	ADC #$00
-	STA CHKSUM
+	JSR ?ADDSUM
 	INY 
 	BNE ?GET1
 	INC BUFRHI
@@ -300,8 +296,10 @@ DOHIDET	STA DRETRY
 
 ; clear timer1
 ?CLRTIM1	LDY #$00
+
 ; set timer1 with Y*256 cycles
 ?STIMOUT	LDX #$00
+
 ; set timer1 Y*256 + X cycles
 ?STIMOU2	LDA #1
 	JSR SETVBV
@@ -309,7 +307,20 @@ DOHIDET	STA DRETRY
 	STA CDTMA1
 	LDA #>?ERRTO
 	STA CDTMA1+1
-?RDOK	RTS
+?RDOK	LDA #0
+	RTS
+
+; read ACK/NAK, handle ERROR as NAK
+; used when waiting for command frame ACK and data frame ACK
+
+?CHKST	
+	LDY #$02
+	JSR ?STIMOUT
+	LDA #MSKRECV
+	STA IRQEN
+	JSR ?RDACK
+	BNE ?ERRNAK	; catch ERROR and handle it like NAK
+?CHKOK	RTS
 
 ; set command timeout and wait for command complete
 
@@ -325,7 +336,7 @@ DOHIDET	STA DRETRY
 	TAY 
 	JSR ?STIMOU2
 
-; receive ACK/NAK (or COMPLETE/ERROR)
+; receive ACK/NAK, COMPLETE/ERROR
 
 ?RDACK	LDA #SKRECV	; set pokey to receive async mode
 	STA SKCTL
@@ -342,26 +353,24 @@ DOHIDET	STA DRETRY
 	BEQ ?RDOK
 ?NOACK	CMP #'C		; COMPLETE
 	BEQ ?RDOK
-	CMP #'E		; ERROR
-	BNE ?NERRDEV
-	LDY #ERRDEV	; command error
-	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+	CMP #'E		; command ERROR
+	BEQ ?RDERR
 
-?NERRDEV LDY #ERRNAK	; any other error -> set code $8B
-	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+?ERRNAK LDY #ERRNAK	; NAK or any other error -> set code $8B
 
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 ?ERRFRM	LDY #ERRFRM	; framing error
-	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 ?ERROVR	LDY #ERROVR	; data input overrun
-	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 
-?ERRCHK	LDY #ERRCHK	; checksum error
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+?ERRCHK	LDY #ERRCHK	; checksum error
+
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+?ERRTO	LDY #ERRTO	; timeout error
 
 ; general error routine, code in Y
-
-?ERRTO	LDY #ERRTO
 
 ?ERR	STY STATUS
 
@@ -380,9 +389,11 @@ DOHIDET	STA DRETRY
 	TXS
 	JMP ?SIOEND	; we got an error, cleanup and try to restart
 
-; timeout interrupt handler
+?RDERR	LDY #ERRDEV	; command error
+	STY STATUS
+	RTS
 
-MYERR138=?ERRTO
+; break handler
 
 ?ERRBRK	LDA #RMBRK	; reset break interrupt flag
 	STA IRQEN
@@ -395,7 +406,7 @@ MYERR138=?ERRTO
 	STY STATUS
 	JMP ?ENDCMD	; end command without retrying
 
-
+; read a byte
 
 ?GETBYTE LDA #IMRECV
 ?GETBY1	BIT IRQST
@@ -433,7 +444,8 @@ MYERR138=?ERRTO
 	STA CHKSUM
 	RTS 
 
-
+; the code starting here is only for diagnostic purposes and is
+; normally not included
 
 .if .def DIAGSIO
 ?DIAGS	.DC $20 0

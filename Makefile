@@ -1,8 +1,8 @@
 #all: coms diag.atr
 
 #all: coms patchrom
-all: coms hisio.atr hipatch.atr diag.atr patchrom patchrom.exe
-all: hipatch.atr patchrom patchrom.exe
+#all: coms hisio.atr hipatch.atr diag.atr patchrom patchrom.exe
+all: hipatch.atr diag.atr patchrom patchrom.exe
 
 ATASM=atasm
 #ATASMFLAGS=
@@ -79,5 +79,5 @@ clean:
 
 backup:
 	tar zcf bak/hisio-`date '+%y%m%d-%H%M'`.tgz \
-	Makefile *.src *.inc *.cpp *.h mkdist*
+	Makefile *.src *.inc *.cpp *.h mkdist* *.txt
 

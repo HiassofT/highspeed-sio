@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 	char* newfile;
 	bool need_csum_update;
 
-	printf("patchrom V1.10 071011 (c) 2007 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.10 (c) 2007 Matthias Reichl <hias@horus.com>\n");
 
 	if (argc != 3) {
 		goto usage;
