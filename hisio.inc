@@ -26,6 +26,8 @@
 	BFENLO = $34
 	BFENHI = $35
 
+; $36/$37 are kept free to avoid troubles with TurboDOS
+
 ; re-using original SIO ZP locations $38 - $3C for my own code
 	CRETRY = $38
 	DRETRY = $39

@@ -1,6 +1,6 @@
 Highspeed SIO patch V1.10 for Atari XL/XE OS and MyIDE OS
 
-Copyright (c) 2006,2007 Matthias Reichl <hias@horus.com> and ABBUC
+Copyright (c) 2006-2008 Matthias Reichl <hias@horus.com> and ABBUC
 
 This program is proteced under the terms of the GNU General Public
 License, version 2. Please read LICENSE for further details.
@@ -38,6 +38,9 @@ You can either patch the currently active OS (which needs the RAM under
 the OS ROM) or install a patched OS ROM into your Atari (which doesn't
 use the RAM under the OS ROM and therefore also works with Turbo Basic
 and SpartaDos).
+
+The files "HIPATCH.COM", "HIPATCHR.COM" and "DUMPOS.COM" can be found
+in the ZIP as separate files and also in the included "hipatch.atr".
 
 To patch the currently active OS, simply start "HIPATCH.COM".
 

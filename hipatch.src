@@ -141,8 +141,8 @@ NEEDRES	.BYTE 0
 
 ROMRAM	SEI
 	LDY #0
-	STY $D400
 	STY $D40E
+	STY $D400
 	STY TMPVEC
 	LDA #$C0
 	STA TMPVEC+1
@@ -310,7 +310,7 @@ TTIT	.BYTE 155,"Highspeed SIO patch V1.10R",155
 .else
 TTIT	.BYTE 155,"Highspeed SIO patch V1.10",155
 .endif
-	.BYTE "(c) 2007 by Matthias Reichl",155,155
+	.BYTE "(c) 2008 by Matthias Reichl",155,155
 TTITL	= * - TTIT
 
 TISP	.BYTE "OS already patched",155
