@@ -1,0 +1,328 @@
+;  hipatch - 6502 high speed SIO code OS patch program
+;
+;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;
+;  This program is free software; you can redistribute it and/or modify
+;  it under the terms of the GNU General Public License as published by
+;  the Free Software Foundation; either version 2 of the License, or
+;  (at your option) any later version.
+;
+;  This program is distributed in the hope that it will be useful,
+;  but WITHOUT ANY WARRANTY; without even the implied warranty of
+;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;  GNU General Public License for more details.
+;
+;  You should have received a copy of the GNU General Public License
+;  along with this program; if not, write to the Free Software
+;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+;
+	.include "hipatch.inc"
+	.include "cio.inc"
+
+ORG	= $4000
+
+XLSIO	= $E971
+
+TMPVEC	= $E0	; temporary ZP vector
+
+
+	* = ORG
+
+	BPUT 0, TTITL, TTIT
+
+; check if OS is already patched
+	LDX #3
+CHKP	LDA XLSIO,X
+	CMP MYCODE,X
+	BNE CHKP1
+	DEX
+	BPL CHKP
+
+	PRINT 0, TISP
+
+; just clear SIO settings
+CLRSIO	LDX #12
+	LDA #0
+CLRSIOL	STA RAMBUF,X
+	DEX
+	BPL CLRSIOL
+	RTS
+
+; check if OS is compatible
+
+CHKP1	LDX #3
+CHKCO	LDA XLSIO,X
+	CMP XLCODE,X
+	BNE CHKCO1
+	DEX
+	BPL CHKCO
+	BMI CHKCO2
+
+CHKCO1	PRINT 0, TINC
+	RTS
+
+CHKCO2
+
+.IF .DEF ROMABLE
+; check if we need to update the ROM checksums
+	JSR CHKCSUM
+.ENDIF
+
+	PRINT 0, TPAT
+
+; check if we need to move ROM to RAM
+	LDA $D301
+	AND #$01
+	STA NEEDRES
+	BEQ NOCOPY
+	JSR ROMRAM
+
+; write highspeed SIO code to PDEST
+
+NOCOPY	LDX #0
+COPLP	LDA PCODE,X
+	STA PDEST,X
+	LDA PCODE+$100,X
+	STA PDEST+$100,X
+	LDA PCODE+$200,X
+	STA PDEST+$200,X
+	LDA PCODE+$300,X
+	STA PDEST+$300,X
+	INX
+	BNE COPLP
+
+; clear speed tab
+	JSR CLRSIO
+
+; patch OS SIO routine
+
+	LDX #3
+COP2	LDA XLSIO,X
+	STA PSTD,X
+	LDA MYCODE,X
+	STA XLSIO,X
+	DEX
+	BPL COP2
+
+	LDA #$4C
+	STA PSTD+4
+	LDA #<(XLSIO+4)
+	STA PSTD+5
+	LDA #>(XLSIO+4)
+	STA PSTD+6
+
+.IF .DEF ROMABLE
+; update ROM checksums
+	JSR UPDCSUM
+.ENDIF
+
+	LDA NEEDRES
+	BEQ NORES
+
+; install reset handler
+
+	LDX #RESETL-1
+COPRES	LDA RESET,X
+	STA RESETAD,X
+	DEX
+	BPL COPRES
+
+	LDA #<RESETAD
+	STA 2
+	LDA #>RESETAD
+	STA 3
+	LDA 9
+	ORA #2
+	STA 9
+
+NORES	RTS
+
+NEEDRES	.BYTE 0
+
+ROMRAM	SEI
+	LDY #0
+	STY $D400
+	STY $D40E
+	STY TMPVEC
+	LDA #$C0
+	STA TMPVEC+1
+ROMMV	LDA (TMPVEC),Y
+	DEC $D301
+	STA (TMPVEC),Y
+	INC $D301
+	INY
+	BNE ROMMV
+	INC TMPVEC+1
+	LDA TMPVEC+1
+	BEQ ROMOK
+	CMP #$D0
+	BNE ROMMV
+	LDA #$D8
+	STA TMPVEC+1
+	BNE ROMMV
+ROMOK	DEC $D301
+	LDA #$40
+	STA $D40E
+	CLI
+	RTS
+
+RESET	LDA $D301
+	AND #$FE
+	STA $D301
+	RTS
+RESETL	= * - RESET
+
+XLCODE	TSX
+	STX $0318
+
+MYCODE	NOP
+	JMP PSIO
+
+.if .def ROMABLE
+
+ROM1ID	= $C000
+ROM2ID	= $FFF8
+
+CADR	= $E0
+CEND	= $E2
+CSUM	= $E4
+
+; calculate checksum of a ROM-block
+
+CSBLK	LDY #0
+CSSET	LDA ADRTAB,X
+	STA CADR,Y
+	INX
+	INY
+	CPY #4
+	BNE CSSET
+	LDY #0
+CSBLKL	CLC
+	LDA (CADR),Y
+	ADC CSUM
+	STA CSUM
+	BCC CSBLKL1
+	INC CSUM+1
+CSBLKL1	INC CADR
+	BNE CSBLKL2
+	INC CADR+1
+CSBLKL2	LDA CADR
+	CMP CEND
+	BNE CSBLKL
+	LDA CADR+1
+	CMP CEND+1
+	BNE CSBLKL
+	RTS
+
+; checksum of first 8k ROM
+
+CHK1	LDA #0
+	STA CSUM
+	STA CSUM+1
+	TAX
+	JSR CSBLK
+
+	LDA $D301
+	PHA
+	AND #$7F
+	ORA #1
+	STA $D301
+	JSR CSBLK
+
+	PLA
+	STA $D301
+	JSR CSBLK
+
+	RTS
+
+; checksum of second 8k ROM
+
+CHK2	LDA #0
+	STA CSUM
+	STA CSUM+1
+	LDX #12
+	JSR CSBLK
+	JSR CSBLK
+	RTS
+
+ADRTAB	.WORD $C002,$D000
+	.WORD $5000,$5800
+	.WORD $D800,$E000
+
+	.WORD $E000,$FFF8
+	.WORD $FFFA,$0000
+
+DOCSUPD	.BYTE 0
+
+CHKCSUM	LDA #0
+	STA DOCSUPD
+	JSR CHK1
+	LDA ROM1ID
+	CMP CSUM
+	BNE CSERR
+	LDA ROM1ID+1
+	CMP CSUM+1
+	BNE CSERR
+
+	JSR CHK2
+	LDA ROM2ID
+	CMP CSUM
+	BNE CSERR
+	LDA ROM2ID+1
+	CMP CSUM+1
+	BNE CSERR
+
+	INC DOCSUPD
+	RTS
+
+CSERR	BPUT 0, TCSERRL, TCSERR
+	RTS
+
+UPDCSUM	LDA DOCSUPD
+	BEQ UPDCSE
+
+	PRINT 0, TUPDCS
+
+	JSR CHK1
+	LDA CSUM
+	STA ROM1ID
+	LDA CSUM+1
+	STA ROM1ID+1
+
+	JSR CHK2
+	LDA CSUM
+	STA ROM2ID
+	LDA CSUM+1
+	STA ROM2ID+1
+
+UPDCSE	RTS
+
+TCSERR	.BYTE "ROM checksum error - skipping",155
+	.BYTE "checksum update", 155,155
+TCSERRL	= * - TCSERR
+
+TUPDCS	.BYTE "updating ROM checksum",155
+
+.endif
+
+.if .def ROMABLE
+TTIT	.BYTE 155,"Highspeed SIO patch V1.0R",155
+.else
+TTIT	.BYTE 155,"Highspeed SIO patch V1.0",155
+.endif
+	.BYTE "(c) 2006 by ABBUC & Matthias Reichl",155,155
+TTITL	= * - TTIT
+
+TISP	.BYTE "OS already patched",155
+TINC	.BYTE "incompatible OS",155
+TPAT	.BYTE "patching OS",155
+
+.if .def ROMABLE
+PCODE	.incbin "hipatch-code-rom.bin"
+.else
+PCODE	.incbin "hipatch-code.bin"
+.endif
+
+	* = $2E0
+	.WORD ORG
+

@@ -1,0 +1,11 @@
+#!/bin/sh
+VER=-`date '+%y%m%d'`
+
+if [ $# -ge 1 ] ; then
+	VER=$1
+fi
+
+NAME=hisiosrc$VER
+
+zip dist/$NAME Makefile *.src *.inc
+

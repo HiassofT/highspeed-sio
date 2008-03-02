@@ -1,0 +1,116 @@
+;  dumpos - dump current OS to a file
+;
+;  Copyright (c) 2006 by Matthias Reichl
+;
+;  This program is free software; you can redistribute it and/or modify
+;  it under the terms of the GNU General Public License as published by
+;  the Free Software Foundation; either version 2 of the License, or
+;  (at your option) any later version.
+;
+;  This program is distributed in the hope that it will be useful,
+;  but WITHOUT ANY WARRANTY; without even the implied warranty of
+;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;  GNU General Public License for more details.
+;
+;  You should have received a copy of the GNU General Public License
+;  along with this program; if not, write to the Free Software
+;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+	.include "cio.inc"
+
+ORG	= $3000
+
+	* = ORG
+
+; move selftest to buffer
+
+	LDA $D301
+	PHA
+	AND #$7f
+	ORA #1
+	STA $D301
+
+	LDX #0
+MVLP	LDA $5000,X
+	STA SELFT,X
+	LDA $5100,X
+	STA SELFT+$100,X
+	LDA $5200,X
+	STA SELFT+$200,X
+	LDA $5300,X
+	STA SELFT+$300,X
+	LDA $5400,X
+	STA SELFT+$400,X
+	LDA $5500,X
+	STA SELFT+$500,X
+	LDA $5600,X
+	STA SELFT+$600,X
+	LDA $5700,X
+	STA SELFT+$700,X
+	INX
+	BNE MVLP
+
+	PLA
+	STA $D301
+
+MAIN	BPUT 0, TTITL, TTIT
+
+	INPUT 0, FNAM
+	BPL FOK
+	RTS
+
+FOK	OPEN 1,8,0,FNAM
+	BPL OPENOK
+
+	PRINT 0, TOPERR
+	JMP MAIN
+
+OPENOK	BPUT 1,$1000,$C000
+	BMI WRERR
+	BPUT 1,$0800,SELFT
+	BMI WRERR
+	BPUT 1,$2800,$D800
+	BMI WRERR
+	CLOSE 1
+
+	PRINT 0,TSUCC
+	JMP WAIT
+
+WRERR	CLOSE 1
+	PRINT 0,TWRERR
+
+WAIT	BPUT 0, TXITL, TXIT
+	JSR GETKEY
+	CMP #'R
+	BNE XIT
+	JMP MAIN
+
+XIT	RTS
+
+GETKEY	LDA $E425
+	PHA
+	LDA $E424
+	PHA
+	RTS
+
+TTIT	.BYTE 155, "OS dumper V0.1",155
+	.BYTE "(c) 2006 Matthias Reichl",155,155
+	.BYTE "filename >"
+TTITL	= * -TTIT
+
+TOPERR	.BYTE "error opening file!",155
+TWRERR	.BYTE "error writing file!",155
+TSUCC	.BYTE "successfully dumped OS!",155
+
+TXIT	.BYTE 155,"press 'R' to restart program,",155
+	.BYTE "any other key to exit",155
+TXITL	= * -TXIT
+
+FNAM	= *
+
+SELFT	= * + $100
+
+	* = $2E0
+	.WORD ORG
+

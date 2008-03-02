@@ -1,0 +1,126 @@
+;  highsiodet.src - check for highspeed drives
+;
+;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;
+;  This program is free software; you can redistribute it and/or modify
+;  it under the terms of the GNU General Public License as published by
+;  the Free Software Foundation; either version 2 of the License, or
+;  (at your option) any later version.
+;
+;  This program is distributed in the hope that it will be useful,
+;  but WITHOUT ANY WARRANTY; without even the implied warranty of
+;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;  GNU General Public License for more details.
+;
+;  You should have received a copy of the GNU General Public License
+;  along with this program; if not, write to the Free Software
+;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+;
+
+HISIO	LDA DUNIT
+	BNE ?NOCLR
+	LDX #8
+?CLRLP	STA SPEEDTB-1,X
+	DEX 
+	BNE ?CLRLP
+	RTS 
+
+?NOCLR	TAX 
+	LDA SPEEDTB-1,X
+	BEQ ?DOCHK
+	JMP ?DOSIO
+
+?DOCHK	LDA SOUNDR
+	PHA
+	LDA #0
+	STA SOUNDR
+
+	LDA #STDSPD
+	STA SPEEDTB-1,X
+	LDA DAUX2
+	PHA
+	LDA DAUX1
+	PHA
+	LDY #$07
+?SAVCMD	LDA DCOMND,Y
+	PHA 
+	LDA ?CMD3F,Y
+	STA DCOMND,Y
+	DEY 
+	BPL ?SAVCMD
+	JSR ?DOSIO
+	LDX DUNIT
+	LDY DSTATS
+	BMI ?NOULTRA
+	LDA HIBUF
+	STA SPEEDTB-1,X
+	JMP ?RESCMD
+
+?NOULTRA LDA #TURFLG
+	STA SPEEDTB-1,X
+	JSR ?GETST
+	BPL ?RESCMD
+
+	LDX DUNIT
+	LDA #XFFLG
+	STA SPEEDTB-1,X
+	JSR ?GETST
+	BPL ?RESCMD
+
+	LDX DUNIT
+	LDA #HAPFLG
+	STA SPEEDTB-1,X
+	JSR ?CHKHAP
+	BPL ?RESCMD
+
+	LDX DUNIT
+	LDA #STDSPD
+	STA SPEEDTB-1,X
+	BNE ?RESCMD
+
+?GETST	LDY #$07
+?GETSTL	LDA ?CMDST,Y
+	STA DCOMND,Y
+	DEY
+	BPL ?GETSTL
+	JSR ?DOSIO
+	LDY DSTATS
+	RTS
+
+?CHKHAP	LDA #$48
+	STA DCOMND
+	LDA #0
+	STA DSTATS
+	STA DAUX2
+	LDA #$20
+	STA DAUX1
+	JSR ?DOSIO
+	LDY DSTATS
+	RTS
+
+?RESCMD	LDY #$00
+?RESLP	PLA 
+	STA DCOMND,Y
+	INY 
+	CPY #$0A
+	BCC ?RESLP
+	PLA
+	STA SOUNDR
+
+?DOSIO	LDX DUNIT
+	LDA SPEEDTB-1,X
+	.IF .DEF USENOHIOS
+	CMP #STDSPD
+	BNE ?NOSTD
+	JMP $E459
+?NOSTD	= *
+	.ENDIF
+	STA SIOSPEED
+	JMP DOHISIO
+
+?CMD3F	.BYTE $3F,$40
+	.WORD HIBUF,1,1
+
+?CMDST	.BYTE $53,$40
+	.WORD HIBUF,1,4
+
