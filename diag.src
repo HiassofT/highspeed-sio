@@ -36,18 +36,18 @@ START	= $2000
 	LDA #7
 	STA $306
 
-; read sectors 1-720 in a loop forever
+; read sectors 4-720 in a loop forever
 
-; TCMD	= 'R
-TCMD	= 'P
+TCMD	= 'R
+TDIR	= $40
 
-;TDIR	= $40
-TDIR	= $80
+;TCMD	= 'P
+;TDIR	= $80
 
 TBYT	= $80
 ;TBYT	= $100
 
-DOTEST	JSR GETKEY
+DOTEST	JSR GETKEY	; wait for a keypress first
 
 	LDA #TCMD
 	STA $302
@@ -72,8 +72,8 @@ TLOOP	LDA 53279
 
 	LDA #TDIR
 	STA $303
-	JSR $E459
-;	JSR HISIO
+;	JSR $E459
+	JSR HISIO
 
 	JSR PDIAG
 	LDA $303
