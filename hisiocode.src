@@ -93,6 +93,7 @@ DOHIDET	STA DRETRY
 ?CRETLP	
 
 .if .def DIAGSIO
+; phase 00 : send command frame and wait for ACK
 	LDA #0
 	STA ?DIAGST
 	STA ?DIAGBT
@@ -138,6 +139,7 @@ DOHIDET	STA DRETRY
 	JSR ?CLRTIM1	; got ACK, clear timer
 
 .if .def DIAGSIO
+; phase 01 : send data frame (only if write operation)
 	INC ?DIAGST
 .endif
 
@@ -163,6 +165,7 @@ DOHIDET	STA DRETRY
 	JSR ?SENDBLK	; transmit data frame
 
 .if .def DIAGSIO
+; phase 02 (write) : receive data frame ACK
 	INC ?DIAGST
 .endif
 
@@ -171,6 +174,7 @@ DOHIDET	STA DRETRY
 ?NOSEND	
 
 .if .def DIAGSIO
+; phase 02 (read) / 03 (write) : receive command complete
 	INC ?DIAGST
 .endif
 
@@ -179,6 +183,7 @@ DOHIDET	STA DRETRY
 	BVC ?SIOEND
 
 .if .def DIAGSIO
+; phase 03 (read) / 04 (write) : read data frame (only if read operation)
 	INC ?DIAGST
 .endif
 

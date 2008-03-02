@@ -58,8 +58,8 @@ TDIR	= $40
 ;TCMD	= 'P
 ;TDIR	= $80
 
-;TBYT	= $80
-TBYT	= $100
+TBYT	= $80
+;TBYT	= $100
 
 DOTEST	JSR GETKEY	; wait for a keypress first
 

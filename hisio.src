@@ -51,6 +51,10 @@
 ;  09/17/2007 Matthias Reichl
 ;    - rewrote almost all old code, moved ZP memory addresses
 ;      to fix TurboDos issues
+;
+;  10/07/2007 Matthias Reichl
+;    - fixed timeout handling, CLRTIM1 is now called after
+;      receiving the whole data frame
 
 	.include "hisio.inc"
 
