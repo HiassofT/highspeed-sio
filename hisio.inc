@@ -27,13 +27,16 @@
 	BFENHI = $35
 
 ; re-using original SIO ZP locations $38 - $3C for my own code
-;	CRETRY = $38
-;	DRETRY = $39
+	CRETRY = $38
+	DRETRY = $39
 
-	CRETRY = $29C
-	DRETRY = $2BD
+; speed used by this SIO command (changed to standard for second retry)
+	MYSPEED = $3A
+	STACKP = $3B
 
-	STACKP = $318
+;	CRETRY = $29C
+;	DRETRY = $2BD
+;	STACKP = $318
 
 	SOUNDR = $41
 	CRITIC = $42
@@ -71,6 +74,7 @@
 
 ; IRQEN masks
 	IMBRK = $80	; break key pressed
+	IMKBD = $40	; break key pressed
 	IMRECV = $20	; byte received
 	IMSEND = $10	; ready to send next byte
 	IMSCPL = $08	; transmission complete
@@ -80,9 +84,9 @@
 	RMRECV = $DF
 	RMSEND = $EF
 
-; standard masks: BRK + send/receive
-	MSKSEND = $90
-	MSKRECV = $A0
+; standard masks: break + send/receive + keyboard (kbd not handeled)
+	MSKRECV = $E0
+	MSKSEND = $D0
 
 ; Pokey SKCTL value for transmitting data (sync. send)
 	SKSEND = $23
