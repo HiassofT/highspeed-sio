@@ -55,10 +55,12 @@ test.com: test.src hi4000.com
 	rm test1.com
 
 hisio.atr: test.com coms
+	mkdir -p disk
 	cp hi*.com test.com disk
 	dir2atr 720 hisio.atr disk
 
 hipatch.atr: hipatch.com hipatchr.com dumpos.com
+	mkdir -p patchdisk
 	cp hipatch.com hipatchr.com dumpos.com patchdisk
 	dir2atr 720 hipatch.atr patchdisk
 
@@ -76,6 +78,7 @@ patchrom.exe: patchrom.cpp patchrom.h hicode.h
 
 clean:
 	rm -f *.bin *.com *.atr *.o patchrom.exe patchrom
+	rm -rf disk patchdisk
 
 backup:
 	tar zcf bak/hisio-`date '+%y%m%d-%H%M'`.tgz \

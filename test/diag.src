@@ -1,0 +1,131 @@
+;  Highspeed SIO diagnostics
+;
+
+DIAGSIO = 1
+
+	.include "cio.inc"
+	.include "hisio.inc"
+
+START	= $2000
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+       
+	LDA #0
+	STA 580
+	LDA #2
+	STA 9
+	LDA #<RUN
+	STA 2
+	LDA #>RUN
+	STA 3
+
+
+RUN	LDA #0
+	STA $301
+	JSR HISIO ; clear speed table
+
+; set SIO parameters for D2:
+
+	LDA #$31
+	STA $300
+	LDA #2
+	STA $301
+	LDA #7
+	STA $306
+
+; read sectors 4-720 in a loop forever
+
+TCMD	= 'R
+TDIR	= $40
+
+;TCMD	= 'P
+;TDIR	= $80
+
+;TBYT	= $80
+TBYT	= $100
+
+DOTEST	JSR GETKEY	; wait for a keypress first
+
+	LDA #TCMD
+	STA $302
+	LDA #<TBYT
+	STA DBYTLO
+	LDA #>TBYT
+	STA DBYTHI
+
+	LDA #<BUF
+	STA DBUFLO
+	LDA #>BUF
+	STA DBUFHI
+
+TLOOP0	
+	LDA #<721
+	STA DAUX1
+	LDA #>721
+	STA DAUX2
+
+TLOOP	LDA 53279
+	CMP #6
+	BEQ TLOOP
+
+	LDA #TDIR
+	STA $303
+;	JSR $E459
+	JSR HISIO
+
+	JSR PDIAG
+	LDA $303
+	BMI TEND
+
+	INC DAUX1
+	BNE TLOOP1
+	INC DAUX2
+TLOOP1	LDA DAUX2
+	CMP #4
+	BNE TLOOP
+	LDA DAUX1
+	CMP #$D1
+	BNE TLOOP
+	BEQ TLOOP0
+
+TEND	JMP TEND
+
+XRTS	RTS
+
+	.include "hisiodet.src"
+	.include "hisiocode.src"
+
+HIBUF   .DC 4 0
+SIOSPEED        .BYTE 0
+SPEEDTB .DC 8 0
+
+GETKEY  LDA $E425
+	PHA
+	LDA $E424
+	PHA
+	RTS
+
+BUF	= *
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *

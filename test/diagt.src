@@ -1,0 +1,260 @@
+;  Highspeed SIO diagnostics: test for overrun
+;
+
+DIAGSIO = 1
+
+	.include "cio.inc"
+	.include "hisio.inc"
+
+START	= $2000
+
+DRIVENO	= 2
+
+BCOUNT	= $E0
+FCOUNT	= $E2
+OCOUNT	= $E4
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+       
+	LDA #0
+	STA 580
+	LDA #2
+	STA 9
+	LDA #<RUN
+	STA 2
+	LDA #>RUN
+	STA 3
+
+
+RUN	LDA #3
+	STA MYSPEED
+
+; set SIO parameters for D2:
+
+	LDA #$31
+	STA $300
+	LDA #DRIVENO
+	STA $301
+	LDA #7
+	STA $306
+	LDA #1
+	STA DAUX1
+	LDA #0
+	STA DAUX2
+
+; read sectors 4-720 in a loop forever
+
+TCMD	= 'R
+TDIR	= $40
+
+;TCMD	= 'P
+;TDIR	= $80
+
+;TBYT	= $80
+TBYT	= $100
+
+DOTEST	JSR GETKEY	; wait for a keypress first
+
+	LDA #TCMD
+	STA $302
+	LDA #<TBYT
+	STA DBYTLO
+	LDA #>TBYT
+	STA DBYTHI
+
+	LDA #<BUF
+	STA DBUFLO
+	LDA #>BUF
+	STA DBUFHI
+
+	LDA #TDIR
+	STA DSTATS
+
+	LDA #0
+	STA BCOUNT
+	STA BCOUNT+1
+	STA OCOUNT
+	STA OCOUNT+1
+	STA FCOUNT
+	STA FCOUNT+1
+	;STA $D40E
+	STA $D400
+
+	JSR DOHISIO
+
+X	JMP X
+
+DOHISIO	SEI
+	LDA #$01
+	STA CRITIC
+	LDA DUNIT
+	ORA #$30
+	STA CDEVIC
+
+	LDA DCOMND
+	STA CCOMND
+	LDA DAUX1
+	STA CAUX1
+	LDA DAUX2
+	STA CAUX2
+
+?CRETLP	LDA MYSPEED
+	STA AUDF3
+	LDA #$34	; set command line
+	STA PBCTL
+	LDA #$00
+	STA STATUS
+	STA BFENHI
+	STA AUDF4
+	LDA #$3A	; < CDEVIC
+	STA BUFRLO
+	LDA #$02	; > CDEVIC
+	STA BUFRHI
+	ASL 
+	STA BFENLO
+
+; setup pokey
+	LDA #$28
+	STA AUDCTL
+	LDX #$A8
+	STX AUDC4
+
+; transmit command frame
+	JSR ?SENDBLK
+
+	LDA #MSKRECV	; enable receive interrupt
+	STA IRQEN
+
+	LDA #SKRECV	; set pokey to receive async mode
+	STA SKCTL
+	STA SKREST
+	STA $D40A
+	STA $D40A
+	LDY #0
+	LDA #$3C	; clear command line
+	STA PBCTL
+
+; TEST start: just read bytes and count them
+
+?TESTLP	LDA #IMRECV
+?TESTL1	BIT IRQST
+	BPL ?TESTX	; break key pressed?
+	BNE ?TESTL1
+	LDA #RMRECV	; reset data-receive IRQ bit
+	STA IRQEN
+	LDA #MSKRECV	; enable data-receive IRQ
+	STA IRQEN
+	LDA SKSTAT
+	STA SKREST
+	BPL ?TESTF	; framing error
+	AND #$20
+	BEQ ?TESTO	; data input overrun
+	LDA SERIN
+	STA BUF,Y
+	INY
+	STY BCOUNT
+	BNE ?TESTLP
+XXX	JMP XXX
+
+?TESTF	INC FCOUNT
+	BNE ?TESTLP
+	INC FCOUNT+1
+	JMP ?TESTLP
+
+?TESTO	INC OCOUNT
+	BNE ?TESTLP
+	INC OCOUNT+1
+	JMP ?TESTLP
+
+?TESTX	RTS
+
+?SENDBLK	LDY #$00	; short delay before sending data
+?WT1	INY 
+	BNE ?WT1
+	LDA #SKSEND	; set pokey to transmit data mode
+	STA SKCTL
+	STA SKREST
+	LDA #MSKSEND
+	STA IRQEN
+	LDA (BUFRLO),Y	; start transmission by sending first byte
+	STA CHKSUM
+	STA SEROUT
+	INY
+	BNE ?SND2	; always
+	
+?SND1	LDA (BUFRLO),Y
+	JSR ?SENDBYT	; normal send, wait for pokey clear
+	INY 
+	BNE ?SND2
+	INC BUFRHI
+	DEC BFENHI
+; wait a litte after sending a full page, needed by some
+; slow drives (?) when sending more than 256 bytes (??)
+	LDX #$E0
+?WT2	INX 
+	BNE ?WT2
+?SND2	CPY BFENLO
+	BNE ?SND1
+	LDA BFENHI
+	BNE ?SND1
+	LDA CHKSUM
+	JSR ?SENDBYT
+?WTSND	LDA IRQST
+	AND #IMSCPL	; wait until transmit complete
+	BNE ?WTSND
+	RTS
+; send a byte. Note. we don't check for the break key
+; here since it confuses several drives (eg. speedy 1050)
+
+?SENDBYT	TAX
+	LDA #IMSEND
+?WPUT	BIT IRQST
+	BNE ?WPUT
+	LDA #RMSEND
+	STA IRQEN
+	LDA #MSKSEND
+	STA IRQEN
+	TXA
+	STA SEROUT
+
+?ADDSUM CLC
+	ADC CHKSUM
+	ADC #$00
+	STA CHKSUM
+	RTS
+
+
+GETKEY  LDA $E425
+	PHA
+	LDA $E424
+	PHA
+	RTS
+
+XRTS	RTS
+
+SIOSPEED	.BYTE 40
+
+BUF	= $4000
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *

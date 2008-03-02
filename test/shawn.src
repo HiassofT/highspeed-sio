@@ -1,0 +1,176 @@
+;  Highspeed SIO Test for
+;
+
+	.include "cio.inc"
+	.include "hisio.inc"
+
+START	= $2000
+
+	.MACRO SIOTEST ; parameter: SIOTAB
+	LDX #$B
+LP1	LDA %1,X
+	STA $300,X
+	DEX
+	BPL LP1
+	JSR PSIO
+	JSR HISIO
+	JSR PRES
+	LDX #$B
+LP2	LDA %1,X
+	STA $300,X
+	DEX
+	BPL LP2
+	JSR PSIO
+	;JSR $E459
+	;JSR PRES
+	;LDA #155
+	;JSR PUTCHAR
+	.ENDM
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+       
+	LDA #0
+	STA 580
+	LDA #2
+	STA 9
+	LDA #<RUN
+	STA 2
+	LDA #>RUN
+	STA 3
+
+
+RUN	LDA #0
+	STA $301
+	JSR HISIO ; clear speed table
+
+DOTEST	LDA #0
+	STA 82
+	LDA #125
+	JSR PUTCHAR
+	JSR GETKEY	; wait for a keypress first
+
+;	SIOTEST SEC721
+;	SIOTEST SEC720
+;	SIOTEST APETIME
+;	SIOTEST SECBIG
+	SIOTEST FMTSD
+
+TEND	JMP TEND
+
+XRTS	RTS
+
+DRIVENO	= 2
+DIRIN	= $40
+DIROUT	= $80
+
+	.MACRO SIOGEN ; command, direction, length, daux
+	.BYTE $31, DRIVENO, %1, %2
+	.WORD BUF
+	.BYTE 7, 0
+	.WORD %3
+	.WORD %4
+	.ENDM
+
+; read non-existent sector 721
+SEC721	SIOGEN 'R, DIRIN, 128, 721
+
+; read existent sector 720
+SEC720	SIOGEN 'R, DIRIN, 128, 720
+
+; read time from APE
+APETIME	SIOGEN $93, DIRIN, 6, $A0EE
+
+; read sector 720 with too long data-frame
+SECBIG	SIOGEN 'R, DIRIN, 129, 720
+
+; format disk in single density
+FMTSD	SIOGEN $21, DIRIN, 128, 0
+
+
+	.include "hisiodet.src"
+	.include "hisiocode.src"
+
+HIBUF   .DC 4 0
+SIOSPEED        .BYTE 0
+SPEEDTB .DC 8 0
+
+PTEMP	.BYTE 0
+
+PSIO	LDA #0
+	STA PTEMP
+PSIOLP	LDX PTEMP
+	LDA $300,X
+	JSR PHEX
+	INC PTEMP
+	LDA PTEMP
+	CMP #$C
+	BEQ PSIOE
+	LDA #32
+	JSR PUTCHAR
+	JMP PSIOLP
+
+PSIOE	LDA #':
+	JSR PUTCHAR
+	LDA #32
+	JSR PUTCHAR
+	RTS
+
+PRES	TYA
+	JSR PHEX
+	LDA #155
+	JSR PUTCHAR
+	RTS
+
+PHEX	PHA
+	LSR
+	LSR
+	LSR
+	LSR
+	TAX
+	LDA HEXTAB,X
+	JSR PUTCHAR
+	PLA
+	AND #$0F
+	TAX
+	LDA HEXTAB,X
+
+PUTCHAR	TAY
+	LDA $E407
+	PHA
+	LDA $E406
+	PHA
+	TYA
+	RTS
+
+GETKEY  LDA $E425
+	PHA
+	LDA $E424
+	PHA
+	RTS
+
+HEXTAB	.BYTE "0123456789ABCDEF"
+
+BUF	= *
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *
