@@ -306,11 +306,11 @@ TUPDCS	.BYTE "updating ROM checksum",155
 .endif
 
 .if .def ROMABLE
-TTIT	.BYTE 155,"Highspeed SIO patch V1.0R",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.10R 070919",155
 .else
-TTIT	.BYTE 155,"Highspeed SIO patch V1.0",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.10 070919",155
 .endif
-	.BYTE "(c) 2006 by ABBUC & Matthias Reichl",155,155
+	.BYTE "(c) 2007 by Matthias Reichl",155,155
 TTITL	= * - TTIT
 
 TISP	.BYTE "OS already patched",155

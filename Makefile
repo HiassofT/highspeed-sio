@@ -46,6 +46,9 @@ hipatchr.com: hipatch.src hipatch-code-rom.bin hipatch.inc cio.inc
 diag.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src
 
+diagt.atr: diagt.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -odiagt.atr diagt.src
+
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src
 	cat test1.com hi4000.com > test.com

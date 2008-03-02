@@ -47,6 +47,10 @@
 ;  05/01/2006 Matthias Reichl
 ;    - fixed sporadic errors 139 with APE
 ;    - support for Happy 810 warp speed
+;
+;  09/17/2007 Matthias Reichl
+;    - rewrote almost all old code, moved ZP memory addresses
+;      to fix TurboDos issues
 
 	.include "hisio.inc"
 

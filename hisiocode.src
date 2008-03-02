@@ -134,7 +134,8 @@ DOHIDET	STA DRETRY
 	STA AUDF3
 
 ?NOTUR1	
-	JSR ?CHKST ; read command frame ACK/NAK
+	JSR ?CHKST	; read command frame ACK/NAK
+	JSR ?CLRTIM1	; got ACK, clear timer
 
 .if .def DIAGSIO
 	INC ?DIAGST
@@ -253,7 +254,7 @@ DOHIDET	STA DRETRY
 	JSR ?STIMOUT
 	LDA #MSKRECV
 	STA IRQEN
-	BNE ?RDACK
+	BNE ?RDACK	; always
 
 ?GETBLK	LDY #$00
 	STY CHKSUM
@@ -303,7 +304,7 @@ DOHIDET	STA DRETRY
 	STA CDTMA1
 	LDA #>?ERRTO
 	STA CDTMA1+1
-	RTS
+?RDOK	RTS
 
 ; set command timeout and wait for command complete
 
@@ -333,9 +334,9 @@ DOHIDET	STA DRETRY
 .endif
 
 	CMP #'A		; ACK
-	BEQ ?CLRTIM1
+	BEQ ?RDOK
 ?NOACK	CMP #'C		; COMPLETE
-	BEQ ?CLRTIM1
+	BEQ ?RDOK
 	CMP #'E		; ERROR
 	BNE ?NERRDEV
 	LDY #ERRDEV	; command error
