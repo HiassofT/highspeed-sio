@@ -17,8 +17,22 @@
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ;
 
-DOHISIO	SEI
-	INC CRITIC
+DOHISIO	
+
+;.if .def DIAGSIO
+;	LDA #$01
+;.else
+	LDA #$02
+;.endif
+
+; internal entry point for highspeed SIO detection:
+; load A with 1, only 1 retry and no speed fallback
+
+DOHIDET	STA DRETRY
+
+	SEI
+	LDA #$01
+	STA CRITIC
 	LDA DUNIT
 	ORA #$30
 	STA CDEVIC
@@ -68,48 +82,55 @@ DOHISIO	SEI
 	STA CCOMND
 
 ?DOSIO1	TSX 
-	STX FEOF
+	STX STACKP
 
-.if .def DIAGSIO
-	LDA #1
-.else
-	LDA #$02
-.endif
-	STA DRETRY
-?DRETLP	LDA #$07
+?DRETLP	LDA #$0D
 	STA CRETRY
 ?CRETLP	
+
 .if .def DIAGSIO
 	LDA #0
 	STA ?DIAGST
 	STA ?DIAGBT
 .endif
+
 	LDA SIOSPEED
 	CMP #$40
 	BCC ?DOSIO2
 	LDA #STDSPD
 ?DOSIO2	STA AUDF3
-	LDA #$34
+	LDA #$34	; set command line
 	STA PBCTL
 	LDA #$00
 	STA STATUS
-	STA FTYPE
 	STA BFENHI
 	STA AUDF4
-	LDA #$3A
+	LDA #$3A	; < CDEVIC
 	STA BUFRLO
-	LDA #$02
+	LDA #$02	; > CDEVIC
 	STA BUFRHI
 	ASL 
 	STA BFENLO
 
+; setup pokey
+	LDA #$28
+	STA AUDCTL
+	LDX #$A0
+	LDA SOUNDR
+	BEQ ?NOSND
+	LDX #$A8
+?NOSND	STX AUDC4
+
+; transmit command frame
 	JSR ?SENDBLK
 
 	BIT SIOSPEED
 	BPL ?NOTUR1
 	LDA #TURSPD
 	STA AUDF3
-?NOTUR1	JSR ?CHKST
+
+?NOTUR1	
+	JSR ?CHKST ; read command frame ACK/NAK
 
 .if .def DIAGSIO
 	INC ?DIAGST
@@ -119,7 +140,9 @@ DOHISIO	SEI
 	BVC ?NOXF
 	LDA #XFSPD
 	STA AUDF3
-?NOXF	LDA DBUFLO
+?NOXF	LDA #1
+	STA CRETRY	; no more command-frame retries
+	LDA DBUFLO
 	STA BUFRLO
 	LDA DBUFHI
 	STA BUFRHI
@@ -129,47 +152,65 @@ DOHISIO	SEI
 	STA BFENHI
 	LDA DSTATS
 	BPL ?NOSEND
-	JSR ?SENDBLK
-	JSR ?CHKST
-?NOSEND	DEC FTYPE
-	JSR ?SETTIM1
+
+	JSR ?SENDBLK	; transmit data frame
+	JSR ?CHKST	; receive data frame ACK/NAK
+
+?NOSEND	JSR ?SETTIM1	; set command timeout and wait for command complete
 	BIT DSTATS
-	BVC ?NOGET
-	JSR ?GETBLK
-?NOGET	LDA #$A0
-	STA AUDC4
+	BVC ?SIOEND
+
+	JSR ?GETBLK	; receive data block
+
+?SIOEND	JSR ?CLEANUP	; reset timers and pokey
+	LDY STATUS	; was the command successful?
+	BEQ ?ENDCMD	; yes, we are done
+
+	DEC CRETRY	; retry sending command frame?
+	BEQ ?CHKDR	; no, already tried 13 times
+	JMP ?CRETLP	; yes, we have some more retries
+?CHKDR	
+
+	DEC DRETRY	; any more command retries?
+	BEQ ?ENDCMD	; no, we are finished
+	JMP ?DRETLP	; yes, try it again
+?ENDCMD	
+
+	LDA #0
+	STA CRITIC
 	LDA POKMSK
 	STA IRQEN
-	JSR ?CLRTIM1
-	LDA STATUS
-	BEQ ?ENDCMD
-	DEC DRETRY
-	BEQ ?ENDCMD
-	JMP ?DRETLP
-?ENDCMD	DEC CRITIC
-	TAY
+
+	LDY STATUS
 	BNE ?ERRCMD
+
 	INY
 ?ERRCMD	STY DSTATS
 	CLI 
 	RTS 
 
-?SENDBLK	LDY #$00
+?SENDBLK	LDY #$00	; short delay before sending data
 ?WT1	INY 
 	BNE ?WT1
-	LDA #$23
-	JSR ?SETPOKY
-	LDA (BUFRLO),Y
+	LDA #SKSEND	; set pokey to transmit data mode
+	STA SKCTL
+	STA SKREST
+	LDA #MSKSEND
+	STA IRQEN
+	LDA (BUFRLO),Y	; start transmission by sending first byte
 	STA CHKSUM
 	STA SEROUT
-	INY 
-	BNE ?SND2
+	INY
+	BNE ?SND2	; always
+	
 ?SND1	LDA (BUFRLO),Y
-	JSR ?SENDBYT
+	JSR ?SENDBYT	; normal send, wait for pokey clear
 	INY 
 	BNE ?SND2
 	INC BUFRHI
 	DEC BFENHI
+; wait a litte after sending a full page, needed by some
+; slow drives (?) when sending more than 256 bytes (??)
 	LDX #$E0
 ?WT2	INX 
 	BNE ?WT2
@@ -180,18 +221,23 @@ DOHISIO	SEI
 	LDA CHKSUM
 	JSR ?SENDBYT
 ?WTSND	LDA IRQST
-	AND #$08
+	AND #IMSCPL	; wait until transmit complete
 	BNE ?WTSND
 	RTS
 
-?CHKST	LDY #$03
+?CHKST	
+	LDY #$03
 	JSR ?STIMOUT
-	LDA #$C0
+	LDA #MSKRECV
 	STA IRQEN
-	BNE ?RDQUIT
+	BNE ?RDACK
 
 ?GETBLK	LDY #$00
 	STY CHKSUM
+
+; note: pokey is already set to receive mode (in rdquit),
+; so we don't need to do the setup again
+
 ?GETLP	JSR ?GETBYTE
 	STA (BUFRLO),Y
 	JSR ?ADDSUM
@@ -204,12 +250,15 @@ DOHISIO	SEI
 	LDA BFENHI
 	BNE ?GETLP
 	JSR ?GETBYTE
+
 .if .def DIAGSIO
 	STA ?DIAGBT
 .endif
 	CMP CHKSUM
-	BNE ?ERR143
+	BNE ?ERRCHK
 	RTS 
+
+; set command timeout
 
 ?SETTIM1	LDA DTIMLO
 	ROR 
@@ -222,49 +271,51 @@ DOHISIO	SEI
 	AND #$C0
 	TAY 
 	JSR ?STIMOU2
-?RDQUIT	LDA #$13
-	JSR ?SETPOKY
-	LDA #$3C
+
+; receive ACK/NAK (or COMPLETE/ERROR)
+
+?RDACK	LDA #SKRECV	; set pokey to receive async mode
+	STA SKCTL
+	STA SKREST
+	LDA #$3C	; clear command line
 	STA PBCTL
 	JSR ?GETBYTE
+
 .if .def DIAGSIO
 	STA ?DIAGBT
 .endif
-	CMP #$41
-	BEQ ?CLRTIM1
-	CMP #$43
-	BEQ ?CLRTIM1
-	CMP #$45
-	BEQ ?ERR144
-	LDA #$8B
-	BNE ?ERR
-?ERR144	LDA #$90
-	STA STATUS
 
-?CLRTIM1	LDY #$00
-?STIMOUT	LDX #$00
-?STIMOU2	LDA #<?ERR138
-	STA CDTMA1
-	LDA #>?ERR138
-	STA CDTMA1+1
-	STY CDTMV1
-	STX CDTMV1+1
-	RTS
-;	LDA #1
-;	JMP SETVBV
+	CMP #'A		; ACK
+	BNE ?NOACK
+?RDOK	RTS
+?NOACK	CMP #'C		; COMPLETE
+	BEQ ?RDOK
+	CMP #'E		; ERROR
+	BNE ?NERRDEV
+	LDY #ERRDEV	; command error
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 
+?NERRDEV LDY #ERRNAK	; any other error -> set code $8B
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 
-?ERR128	LDX FEOF
-	TXS 
-	LDA #$80
-	STA STATUS
-	BNE ?ERR1
-?ERR143	LDA #$8F
-	.BYTE $2C
-?ERR138	LDA #$8A
-?ERR	STA STATUS
+?ERRFRM	LDY #ERRFRM	; framing error
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+
+?ERROVR	LDY #ERROVR	; data input overrun
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+
+?ERRCHK	LDY #ERRCHK	; checksum error
+	.BYTE $2C	; BIT xxx (skip next 2 bytes)
+
+; general error routine, code in Y
+
+?ERRTO	LDY #ERRTO
+
+?ERR	STY STATUS
+
 .if .def DIAGSIO
 	LDX ?DIAGER
+	TYA
 	STA ?DIAGE,X
 	LDA ?DIAGST
 	STA ?DIAGS,X
@@ -272,43 +323,53 @@ DOHISIO	SEI
 	STA ?DIAGB,X
 	INC ?DIAGER
 .endif
-	LDX FEOF
-	TXS 
-	LDA FTYPE
-	BMI ?ERR1
-	DEC CRETRY
-	BEQ ?ERR1
-	JMP ?CRETLP
-?ERR1	JMP ?NOGET
 
-?GETBYTE LDA #$20
-?GETBY1	BIT IRQST
-	BPL ?ERR128
-	BNE ?GETBY1
-	LDA #$DF
+	LDX STACKP
+	TXS
+	JMP ?SIOEND	; we got an error, cleanup and try to restart
+
+; timeout interrupt handler
+
+MYERR138=?ERRTO
+
+?ERRBRK	LDA #RMBRK	; reset break interrupt flag
 	STA IRQEN
-	LDA #$E0
+	LDA POKMSK	; set default pokey interrupt mask
+	STA IRQEN
+	LDX STACKP
+	TXS
+	JSR ?CLEANUP
+	LDY #ERRBRK	; set error code $80
+	STY STATUS
+	JMP ?ENDCMD	; end command without retrying
+
+?GETBYTE LDA #IMRECV
+?GETBY1	BIT IRQST
+	BPL ?ERRBRK	; break key pressed
+	BNE ?GETBY1
+	LDA #RMRECV	; reset data-receive IRQ bit
+	STA IRQEN
+	LDA #MSKRECV	; enable data-receive IRQ
 	STA IRQEN
 	LDA SKSTAT
 	STA SKREST
-	BPL ?ERR138
+	BPL ?ERRFRM	; framing error
 	AND #$20
-	BEQ ?ERR138
+	BEQ ?ERROVR	; data input overrun
 	LDA SERIN
 	RTS 
 
 ?SENDBYT	TAX 
 ?WPUT	LDA IRQST
-	AND #$10
+	BPL ?ERRBRK
+	AND #IMSEND
 	BNE ?WPUT
-	LDA #$EF
+	LDA #RMSEND
 	STA IRQEN
-	LDA #$D0
+	LDA #MSKSEND
 	STA IRQEN
 	TXA 
 	STA SEROUT
-	LDX IRQST
-	BPL ?ERR128
 
 ?ADDSUM	CLC 
 	ADC CHKSUM
@@ -316,27 +377,32 @@ DOHISIO	SEI
 	STA CHKSUM
 	RTS 
 
-?SETPOKY STA SKCTL
-	STA SKREST
-	LDA #$28
-	STA AUDCTL
-	LDA SOUNDR
-	BEQ ?NOSND
-	LDA #$A8
-	BNE ?DOSND
-?NOSND  LDA #$A0
-?DOSND	STA AUDC4
-	LDA #$F8
-	STA IRQEN
-	RTS 
+?CLRTIM1	LDY #$00
+?STIMOUT	LDX #$00
+?STIMOU2	LDA #1
+	JSR SETVBV
+	LDA #<?ERRTO
+	STA CDTMA1
+	LDA #>?ERRTO
+	STA CDTMA1+1
+	RTS
+
+; cleanup, in case of error or end of transmission
+
+?CLEANUP JSR ?CLRTIM1
+	LDA #$A0
+	STA AUDC4
+	JSR ?CLRTIM1
+	RTS
+
 
 .if .def DIAGSIO
-?DIAGS	.DC 7 0
-?DIAGB	.DC 7 0
-?DIAGE	.DC 7 0
+?DIAGS	.DC $20 0
+?DIAGB	.DC $20 0
+?DIAGE	.DC $20 0
 ?DIAGBT	.BYTE 0
 ?DIAGST	.BYTE 0
-?DIAGER	.DC 7 0
+?DIAGER	.BYTE 0
 
 PDIAG	LDA ?DIAGER
 	BEQ ?PDIAG0

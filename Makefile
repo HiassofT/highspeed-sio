@@ -5,7 +5,8 @@ all: coms hisio.atr hipatch.atr diag.atr patchrom patchrom.exe
 all: hipatch.atr patchrom patchrom.exe
 
 ATASM=atasm
-ATASMFLAGS=
+#ATASMFLAGS=
+ATASMFLAGS=-s
 
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g

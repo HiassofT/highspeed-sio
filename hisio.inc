@@ -25,11 +25,15 @@
 	BUFRHI = $33
 	BFENLO = $34
 	BFENHI = $35
-	CRETRY = $36
-	DRETRY = $37
 
-	FTYPE = $3E
-	FEOF = $3F
+; re-using original SIO ZP locations $38 - $3C for my own code
+;	CRETRY = $38
+;	DRETRY = $39
+
+	CRETRY = $29C
+	DRETRY = $2BD
+
+	STACKP = $318
 
 	SOUNDR = $41
 	CRITIC = $42
@@ -64,6 +68,36 @@
 	IRQST = $D20E
 	SKCTL = $D20F
 	SKSTAT = $D20F
+
+; IRQEN masks
+	IMBRK = $80	; break key pressed
+	IMRECV = $20	; byte received
+	IMSEND = $10	; ready to send next byte
+	IMSCPL = $08	; transmission complete
+
+; and the samet, inverted, to reset IRQ status
+	RMBRK = $7F
+	RMRECV = $DF
+	RMSEND = $EF
+
+; standard masks: BRK + send/receive
+	MSKSEND = $90
+	MSKRECV = $A0
+
+; Pokey SKCTL value for transmitting data (sync. send)
+	SKSEND = $23
+
+; Pokey SKCTL value for receiving data (async. recv)
+	SKRECV = $13
+
+; error codes
+	ERRBRK = $80	; break key pressed
+	ERRTO = $8A	; timeout
+	ERRNAK = $8B	; command NAK
+	ERRFRM = $8C	; framing error
+	ERROVR = $8E	; data overrun
+	ERRCHK = $8F	; checksum error
+	ERRDEV = $90	; device error
 
 	PBCTL = $D303
 

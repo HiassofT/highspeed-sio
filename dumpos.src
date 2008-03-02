@@ -94,7 +94,7 @@ GETKEY	LDA $E425
 	PHA
 	RTS
 
-TTIT	.BYTE 155, "OS dumper V0.1",155
+TTIT	.BYTE 155, "OS dumper V1.0",155
 	.BYTE "(c) 2006 Matthias Reichl",155,155
 	.BYTE "filename >"
 TTITL	= * -TTIT
