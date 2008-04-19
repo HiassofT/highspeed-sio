@@ -11,7 +11,7 @@ rm -rf dist/tmp
 mkdir -p dist/tmp/src/patchdisk
 
 cp Makefile *.src *.inc *.cpp *.h dist/tmp/src
-cp readme* diag.atr hipatch.atr patchrom.exe dist/tmp
+cp README.txt hipatch.atr patchrom.exe dist/tmp
 
 cd dist/tmp
 zip -r ../$NAME.zip *
