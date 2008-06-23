@@ -76,7 +76,7 @@ EPROM burner to write this dump to an EPROM.
 The other method is creating a patched ROM image on a PC running Windows
 or Unix. Windows users can use the included "patchrom.exe" file, Unix
 users first have to compile the "patchrom" in the source directory
-(just enter "cd src" and "make patchrom").
+(just do a "cd src" and "make patchrom").
 
 "patchrom" needs two command line arguments: the first one is the
 filename of the original ROM image that you want to patch the second

@@ -10,7 +10,7 @@ NAME=hipatch-$VER
 rm -rf dist/tmp
 mkdir -p dist/tmp/src/patchdisk
 
-cp Makefile *.src *.inc *.cpp *.h dist/tmp/src
+cp Makefile *.src *.inc *.cpp *.h hipatch-code-rom.bin dist/tmp/src
 cp README.txt hipatch.atr patchrom.exe dist/tmp
 
 cd dist/tmp
