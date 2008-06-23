@@ -1,12 +1,10 @@
-#all: coms diag.atr
+all: hipatch.atr patchrom patchrom.exe
 
-#all: coms patchrom
-#all: coms hisio.atr hipatch.atr diag.atr patchrom patchrom.exe
-all: hipatch.atr diag.atr patchrom patchrom.exe
+#all: hipatch.atr diag.atr patchrom patchrom.exe
 
 ATASM=atasm
-#ATASMFLAGS=
-ATASMFLAGS=-s
+ATASMFLAGS=
+#ATASMFLAGS=-s
 
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
@@ -45,9 +43,6 @@ hipatchr.com: hipatch.src hipatch-code-rom.bin hipatch.inc cio.inc
 
 diag.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src
-
-diagt.atr: diagt.src $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -odiagt.atr diagt.src
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src
