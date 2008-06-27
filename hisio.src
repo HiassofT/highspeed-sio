@@ -55,6 +55,11 @@
 ;  10/07/2007 Matthias Reichl
 ;    - fixed timeout handling, CLRTIM1 is now called after
 ;      receiving the whole data frame
+;
+;  06/26/2008 Matthias Reichl
+;    - always configure happy drives to use fast writes
+;      thanks to ijor for pointing out that otherwise the happy
+;      might corrupt data when writing to the disk!
 
 	.include "hisio.inc"
 
