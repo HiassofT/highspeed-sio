@@ -17,42 +17,14 @@
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
+SRCVEC	= $E0
+DSTVEC	= $E2
+
 	.include "cio.inc"
 
 ORG	= $3000
 
 	* = ORG
-
-; move selftest to buffer
-
-	LDA $D301
-	PHA
-	AND #$7f
-	ORA #1
-	STA $D301
-
-	LDX #0
-MVLP	LDA $5000,X
-	STA SELFT,X
-	LDA $5100,X
-	STA SELFT+$100,X
-	LDA $5200,X
-	STA SELFT+$200,X
-	LDA $5300,X
-	STA SELFT+$300,X
-	LDA $5400,X
-	STA SELFT+$400,X
-	LDA $5500,X
-	STA SELFT+$500,X
-	LDA $5600,X
-	STA SELFT+$600,X
-	LDA $5700,X
-	STA SELFT+$700,X
-	INX
-	BNE MVLP
-
-	PLA
-	STA $D301
 
 MAIN	BPUT 0, TTITL, TTIT
 
@@ -66,12 +38,60 @@ FOK	OPEN 1,8,0,FNAM
 	PRINT 0, TOPERR
 	JMP MAIN
 
-OPENOK	BPUT 1,$1000,$C000
+OPENOK	
+
+; save $C000 - $CFFF
+	LDA #0
+	STA SRCVEC
+	LDA #$C0
+	STA SRCVEC+1
+	LDX #$10
+	JSR COPBLK
+
+	BPUT 1,$1000,BUF
+	BPL WOK1
+	JMP WRERR
+WOK1
+; save selftest of original ROM
+
+	SEI	; disable interrupts
+	LDA #0
+	STA $D40E
+
+	LDA $D301
+	PHA
+	AND #$7f
+	ORA #1
+	STA $D301
+
+	LDA #0
+	STA SRCVEC
+	LDA #$50
+	STA SRCVEC+1
+	LDX #8
+	JSR COPBLK
+
+	PLA
+	STA $D301
+
+	LDA #$40
+	STA $D40E
+	CLI	; re-enable interrupts
+
+	BPUT 1,$0800,BUF
 	BMI WRERR
-	BPUT 1,$0800,SELFT
+
+; save $D800 - $FFFF
+	LDA #0
+	STA SRCVEC
+	LDA #$D8
+	STA SRCVEC+1
+	LDX #$28
+	JSR COPBLK
+
+	BPUT 1,$2800,BUF
 	BMI WRERR
-	BPUT 1,$2800,$D800
-	BMI WRERR
+
 	CLOSE 1
 
 	PRINT 0,TSUCC
@@ -94,8 +114,27 @@ GETKEY	LDA $E425
 	PHA
 	RTS
 
-TTIT	.BYTE 155, "OS dumper V1.0",155
-	.BYTE "(c) 2006 Matthias Reichl",155,155
+; setup SRCVEC to point to source address and
+; X register to number of pages
+; memory block will then be copied to BUF
+
+COPBLK	LDA #<BUF
+	STA DSTVEC
+	LDA #>BUF
+	STA DSTVEC+1
+	LDY #0
+COPLP	LDA (SRCVEC),Y
+	STA (DSTVEC),Y
+	INY
+	BNE COPLP
+	INC SRCVEC+1
+	INC DSTVEC+1
+	DEX
+	BNE COPLP
+	RTS
+
+TTIT	.BYTE 155, "OS dumper V1.01",155
+	.BYTE "(c) 2006-2008 Matthias Reichl",155,155
 	.BYTE "filename >"
 TTITL	= * -TTIT
 
@@ -109,7 +148,7 @@ TXITL	= * -TXIT
 
 FNAM	= *
 
-SELFT	= * + $100
+BUF	= * + $100
 
 	* = $2E0
 	.WORD ORG
