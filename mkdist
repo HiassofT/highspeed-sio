@@ -10,8 +10,8 @@ NAME=hipatch-$VER
 rm -rf dist/tmp
 mkdir -p dist/tmp/src/patchdisk
 
-cp Makefile *.src *.inc *.cpp *.h hipatch-code-rom.bin dist/tmp/src
-cp README.txt LICENSE hipatch.atr patchrom.exe hipatch.com hipatchr.com dumpos.com dist/tmp
+cp Makefile *.src *.inc *.cpp *.h hipatch-code-rom*.bin dist/tmp/src
+cp README.txt LICENSE hipatch.atr patchrom.exe hisio*.com dumpos.com dist/tmp
 
 cd dist/tmp
 zip -r ../$NAME.zip *

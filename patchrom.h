@@ -23,3 +23,9 @@
 /* address of SIO code in ROM */
 #define XLSIO 0xE971
 
+/* address of keyboard IRQ handler containing "LDA $D209" */
+#define KEYIRQ 0xFC20
+
+/* address of new, patched IRQ code */
+#define PKEYIRQ 0xCF80
+

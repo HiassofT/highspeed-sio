@@ -23,7 +23,8 @@
 #include <string.h>
 
 #include "patchrom.h"
-#include "hicode.h"
+#include "hicode-key.h"
+#include "hicode-nokey.h"
 
 static unsigned char rombuf[ROMLEN];
 
@@ -46,6 +47,17 @@ static unsigned char oldcode[oldcode_len] = {
 	0x4c, // JMP
 	(XLSIO+4) & 0xff,
 	(XLSIO+4) >> 8 };
+
+#define keycode_len 3
+static unsigned char orig_keycode[keycode_len] = {
+	0xad, // LDA
+	0x09, // D209
+	0xd2};
+
+static unsigned char new_keycode[keycode_len] = {
+	0x4c, // JMP
+	PKEYIRQ & 0xff,
+	PKEYIRQ >> 8 };
 
 #define CSUM1_ADR 0xC000
 #define CSUM2_ADR 0xFFF8
@@ -117,13 +129,22 @@ int main(int argc, char** argv)
 	char* newfile;
 	bool need_csum_update;
 
-	printf("patchrom V1.10 (c) 2006-2008 Matthias Reichl <hias@horus.com>\n");
+	bool patch_keyirq = true;
+	unsigned int idx = 1;
 
-	if (argc != 3) {
+	printf("patchrom V1.12 (c) 2006-2008 Matthias Reichl <hias@horus.com>\n");
+
+	if (argc < 3) {
 		goto usage;
 	}
-	origfile = argv[1];
-	newfile = argv[2];
+
+	if (argv[idx][0] == '-' && argv[idx][1] == 'n') {
+		patch_keyirq = false;
+		idx++;
+	}
+
+	origfile = argv[idx++];
+	newfile = argv[idx++];
 
 	FILE* f;
 	if (!(f=fopen(origfile,"rb"))) {
@@ -149,7 +170,11 @@ int main(int argc, char** argv)
 
 	// copy highspeed SIO code to ROM OS
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
-	memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_bin, hipatch_code_rom_bin_len);
+	if (patch_keyirq) {
+		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_key_bin, hipatch_code_rom_key_bin_len);
+	} else {
+		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_nokey_bin, hipatch_code_rom_nokey_bin_len);
+	}
 
 	// copy old standard SIO code to highspeed SIO code
 	memcpy(rombuf + HISTDSIO - ROMBASE, rombuf + XLSIO - ROMBASE, newcode_len);
@@ -159,6 +184,16 @@ int main(int argc, char** argv)
 
 	// change old SIO code
 	memcpy(rombuf + XLSIO - ROMBASE, newcode, newcode_len);
+
+	// patch keyboard IRQ handler
+	if (patch_keyirq) {
+		if (memcmp(rombuf + KEYIRQ -  ROMBASE, orig_keycode, keycode_len) == 0) {
+			memcpy(rombuf + KEYIRQ -  ROMBASE, new_keycode, keycode_len);
+			printf("patched keyboard IRQ handler\n");
+		} else {
+			printf("unknown OS, not patching keyboard IRQ handler\n");
+		}
+	}
 
 	if (need_csum_update) {
 		//printf("updating ROM checksums\n");
@@ -183,6 +218,8 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom original.rom new.rom\n");
+	printf("usage: patchrom [-n] original.rom new.rom\n");
+	printf("options:\n");
+	printf("  -n  don't patch keyboard IRQ handler\n");
 	return 1;
 }

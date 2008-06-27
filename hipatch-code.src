@@ -16,48 +16,22 @@
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ;
-;  Changes:
-;  03/27/2003 Matthias Reichl
-;    - converted to Atasm source code format
-;    - support for 8 (instead of 4) drives (*)
-;    - use SETVBV instead of setting CDTMV1 directly (*)
-;    - return 1 instead of 0 on success (*)
-;    - added relocator table (*)
-;    (*) thanks to Erhard Puetz for these fixes!
-;
-;  01/19/2004 Matthias Reichl
-;    - removed relocator table for use with MyPicoDos
-;
-;  01/22/2004 Matthias Reichl
-;    - changed all labels to local labels
-;
-;  10/03/2004 Matthias Reichl
-;    - code merge with AtariSIO
-;    - relocator table is generated if RELOCTABLE is defined
-;    - moved definition of SIOADR out of this file
-;
-;  08/15/2005 Matthias Reichl
-;    - added support for 1050 Turbo and XF551
-;
-;  09/19/2005 Matthias Reichl
-;    - fixed Happy/Speedy bug introduced in last version
-;    - code cleanup
 
 	.include "hisio.inc"
 	.include "hipatch.inc"
 
-SIOSPEED = RAMBUF
-SPEEDTB	= RAMBUF+1
-HIBUF	= RAMBUF+9
-
 	* = PDEST
-	.BYTE $ff
+	.BYTE 0
 
 ; patch program must fill this area with jump to standard SIO routine
 STDSIO	= PSTD
 
 	* = PSIO
 	
+.if .def PATCHKEY
+	LDA HIENAB
+	BNE STDSIO
+.endif
 	LDA $0300
 	CMP #$31
 	BNE STDSIO
@@ -68,4 +42,43 @@ STDSIO	= PSTD
 
 	.include "hisiodet.src"
 	.include "hisiocode.src"
+
+.if .def PATCHKEY
+	* = PKEY
+
+	LDA $D209
+	CMP #$F4        ; shift-control-delete = coldstart
+	BNE PKEY1
+	JMP $E477
+PKEY1	PHA
+	CMP #$FE	; shift-control-s = reset speed table
+	BNE PKEY3
+	TXA
+	PHA
+	LDA #0
+	LDX #7
+PKEY2	STA SPEEDTB,X
+	DEX
+	BPL PKEY2
+	PLA
+	TAX
+	JMP PKEYX
+
+PKEY3	CMP #$F9	; shift-control-H = enable highspeed SIO
+	BNE PKEY4
+	LDA #0
+	STA HIENAB
+	BEQ PKEYX
+
+PKEY4	CMP #$E3	; shift-control-N = normal speed SIO
+	BNE PKEYX
+	LDA #$FF
+	STA HIENAB
+	
+PKEYX	PLA
+	JMP KEYIRQ2
+.endif
+
+	* = PVER
+	.BYTE "1.12 Hias 080627"
 

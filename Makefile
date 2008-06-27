@@ -14,32 +14,34 @@ HISIOSRC=hisio.src hisiocode.src hisiodet.src hisio.inc
 %.com: %.src
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
-coms: hipatch.com hipatchr.com dumpos.com
-#coms: hi4000.com hi5000.com hi6000.com hi7000.com hipatch.com dumpos.com
+COMS = hisio.com hisior.com hision.com hisiorn.com dumpos.com
 
-hi4000.com: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -dSTART=16384 -ohi4000.com hisio.src
+hipatch-code-key.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-key.bin -dPATCHKEY=1 hipatch-code.src
 
-hi5000.com: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -dSTART=20480 -ohi5000.com hisio.src
+hipatch-code-rom-key.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-rom-key.bin -dROMABLE=1 -dPATCHKEY=1 hipatch-code.src
 
-hi6000.com: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -dSTART=24576 -ohi6000.com hisio.src
 
-hi7000.com: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -dSTART=28672 -ohi7000.com hisio.src
+hipatch-code-nokey.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-nokey.bin hipatch-code.src
 
-hipatch-code.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -ohipatch-code.bin hipatch-code.src
+hipatch-code-rom-nokey.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-rom-nokey.bin -dROMABLE=1 hipatch-code.src
 
-hipatch.com: hipatch.src hipatch-code.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohipatch.com hipatch.src
 
-hipatch-code-rom.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -ohipatch-code-rom.bin -dROMABLE=1 hipatch-code.src
+hisio.com: hipatch.src hipatch-code-key.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisio.com -dPATCHKEY=1 hipatch.src
 
-hipatchr.com: hipatch.src hipatch-code-rom.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohipatchr.com -dROMABLE=1 hipatch.src
+hisior.com: hipatch.src hipatch-code-rom-key.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisior.com -dROMABLE=1 -dPATCHKEY=1 hipatch.src
+
+hision.com: hipatch.src hipatch-code-nokey.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohision.com hipatch.src
+
+hisiorn.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisiorn.com -dROMABLE=1 hipatch.src
+
 
 diag.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src
@@ -49,25 +51,23 @@ test.com: test.src hi4000.com
 	cat test1.com hi4000.com > test.com
 	rm test1.com
 
-hisio.atr: test.com coms
-	mkdir -p disk
-	cp hi*.com test.com disk
-	dir2atr 720 hisio.atr disk
-
-hipatch.atr: hipatch.com hipatchr.com dumpos.com
+hipatch.atr: $(COMS)
 	mkdir -p patchdisk
-	cp hipatch.com hipatchr.com dumpos.com patchdisk
+	cp $(COMS) patchdisk
 	dir2atr 720 hipatch.atr patchdisk
 
-hicode.h: hipatch-code-rom.bin
-	xxd -i hipatch-code-rom.bin > hicode.h
+hicode-key.h: hipatch-code-rom-key.bin
+	xxd -i hipatch-code-rom-key.bin > hicode-key.h
 
-patchrom.o: patchrom.cpp patchrom.h hicode.h
+hicode-nokey.h: hipatch-code-rom-nokey.bin
+	xxd -i hipatch-code-rom-nokey.bin > hicode-nokey.h
+
+patchrom.o: patchrom.cpp patchrom.h hicode-key.h hicode-nokey.h
 
 patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
-patchrom.exe: patchrom.cpp patchrom.h hicode.h
+patchrom.exe: patchrom.cpp patchrom.h hicode-nokey.h hicode-key.h
 	i586-mingw32msvc-g++ $(CXXFLAGS) -o patchrom.exe patchrom.cpp
 	i586-mingw32msvc-strip patchrom.exe
 

@@ -1,4 +1,4 @@
-Highspeed SIO patch V1.10 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.12 for Atari XL/XE OS and MyIDE OS
 
 Copyright (c) 2006-2008 Matthias Reichl <hias@horus.com> and ABBUC
 
@@ -39,18 +39,25 @@ the OS ROM) or install a patched OS ROM into your Atari (which doesn't
 use the RAM under the OS ROM and therefore also works with Turbo Basic
 and SpartaDos).
 
-The files "HIPATCH.COM", "HIPATCHR.COM" and "DUMPOS.COM" can be found
-in the ZIP as separate files and also in the included "hipatch.atr".
+The files "HISIO.COM", "HISION.COM", "HISIOR.COM", "HISIORN.COM"
+and "DUMPOS.COM" can be found in the ZIP as separate files and also
+in the included "hipatch.atr".
 
-To patch the currently active OS, simply start "HIPATCH.COM".
+To patch the currently active OS, either use "HISIO.COM" or
+"HISION.COM". The difference between these two is that the
+first one also patches the keyboard IRQ handler so that you
+can control the highspeed code with various keystrokes (see
+next section). The "HISION.COM" doesn't touch the keyboard IRQ,
+use this if you don't like the keyboard control or in the
+rare case where other software uses the keystrokes.
 
-At first HIPATCH.COM checks if the current OS is compatible with
+At first the patch checks if the current OS is compatible with
 the highspeed SIO patch. If it's not compatible you get an error
 message and it quits.
 
-Then HIPATCH.COM checks if the OS was already patched. If this is
-the case, it doesn't install itself again but clears the internal SIO
-speed table. At the next drive access the drive type (and therefore
+Then it checks if the OS was already patched. If this is the case,
+it doesn't install itself again but clears the internal SIO speed
+table. At the next drive access the drive type (and therefore
 the highspeed SIO variant) will be detected again.
 
 In the next step the patch checks if the currently running OS already
@@ -68,7 +75,8 @@ If you want to burn a replacement ROM and install it into your Atari
 you first need to create a patched ROM. Currently there are two methods
 to do this:
 
-Start "HIPATCHR.COM" (please note the "R" at the end!) to patch the ROM.
+Start "HISIOR.COM" (please note the "R" at the end!) or "HISIORN.COM"
+(without keyboard IRQ handler, like HISIO/HISION) to patch the ROM.
 Then start "DUMPOS.COM" and enter a filename (eg. "D:XLHI.ROM"). This
 program will then write a 16k ROM dump to that file. Now you can use your
 EPROM burner to write this dump to an EPROM.
@@ -86,11 +94,28 @@ want to create a patched ROM named "hi43i.rom" simply type:
 
 patchrom myide43i.rom hi43i.rom
 
+To create a patched ROM file without the keyboard IRQ handler, use
+the "-n" option (this has to be the first option passed to patchrom).
+For example:
+
+patchrom -n xl.rom xlhi.rom
+
 Now you can use your EPROM burner to create a ROM replacement for
 your Atari.
 
 
-3. Technical details
+3. List of keystrokes
+
+If you decided to also patch the keyboard IRQ handler, the following
+keystrokes are available to control the highspeed SIO patch:
+
+SHIFT+CONTROL+S    Clear SIO speed table
+SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
+SHIFT+CONTROL+H    Enable highspeed SIO
+SHIFT+CONTROL+DEL  Coldstart Atari
+
+
+4. Technical details
 
 Since memory is tight in the Atari 8bit computers the first decision
 was where to put it. Using memory in the standard RAM area wasn't an
@@ -108,21 +133,25 @@ drives D1: - D8:, and 4 bytes are needed as a temporary buffer when
 the disk drive type has to be detected (when accessing a disk drive for
 the first time).
 
-The "RAM version" of the patch (HIPATCH.COM) uses the memory locations
-$CC00-$CC0C for this variables, the ROMable version (HIPATCHR.COM)
-uses memory locations $0100-$010C (the beginning of the stack area).
-Only very few programs use the very beginning of the stack area, so
-compatibility is quite high.
+The versions with keyboard control need one more byte which is used
+to enable/disable the highspeed SIO code at all.
+
+The "RAM version" of the patch (HISIO.COM) uses the memory locations
+$CC00-$CC0D for this variables (HISION: $CC00-$CC0C), the ROMable
+version (HISIOR.COM) uses memory locations $0100-$010D (HISIORN:$0100-$010C,
+the beginning of the stack area). Only very few programs use the very
+beginning of the stack area, so compatibility is quite high.
 
 To make the software patch reset-proof (the ROM OS is activated when
 pressing the reset button), it also needs some more bytes to install
-a reset handler. HIPATCH.COM uses $0100-$0108, the ROMable patch
-HIPATCHR.COM uses $010D-$0115 for this code. The reset code is activated
-by pointing CASINI ($2/$3) to this memory location, but only if CASINI
-was not already used before. Note: The MyIDE soft-OS installs it's own
-reset-handler that switches to RAM-OS using CASINI, so there's no need
-to install another handler. Of course, there's also no need for a
-reset handler if you use a patched ROM installed into your Atari.
+a reset handler. HISIO.COM and HISION.COM use $0100-$0108, the ROMable
+patch HISIOR.COM uses $010E-$0116 (HISIORN.COM. $010D-$0115) for this
+code.  The reset code is activated by pointing CASINI ($2/$3) to this
+memory location, but only if CASINI was not already used before.
+Note: The MyIDE soft-OS installs it's own reset-handler that switches
+to RAM-OS using CASINI, so there's no need to install another handler.
+Of course, there's also no need for a reset handler if you use a
+patched ROM installed into your Atari.
 
 How does this patch hook into the OS?
 
@@ -159,7 +188,12 @@ which type of highspeed SIO to use.
 First, the code tries to send a $3F command (get speed byte) to the
 drive. All ultra-speed capable devices support this command and will
 return the pokey-divisor byte. If this command succeeds, the byte is
-stored in the table.
+stored in the table. In addition to that, a $48 command with DAUX
+set to $0020 (Happy 1050: enable fast writes) is also sent to the drive.
+Although other drives don't need this (and, most likely, don't even
+support this command), Happy drives might corrupt data when writing
+to disk in highspeed mode if fast write is disabled (thanks to ijor
+for pointing this out!).
 
 Then, the code tries to send a $53 command (get status) in 1050 Turbo
 and XF551 mode. If it's a 1050 Turbo, $80 is stored in the speed table,
@@ -282,4 +316,21 @@ is done at standard speed.
 Happy (810) Warp mode only supports the commands $50, $52 and $57 (put,
 read, write sector) in highspeed. Highspeed mode is indicated by setting
 bit 5 of DCOMND.
+
+Implementation of the keyboard IRQ patch:
+
+The keyboard IRQ patch hooks into the IRQ handler at $FC20. The original
+code contains a "LDA $D209" at this location, which is then replaced
+by a "JMP $CF80", the new keyboard hook. The new code reads the current
+keyboard code (again, a "LDA $D209") and then checks if it matches one
+of the special keystrokes. In any case the keyboard code read is preserved
+and then passed on to the original IRQ handler. The end of the new
+code contains a "JMP $FC23", which is the next instruction after the
+original "LDA $D209".
+
+Before patching the IRQ handler the patch checks if the instruction
+at $FC20 is really a "LDA $D209". If not, you'll see a warning message
+that the keyboard IRQ has not been patched. This is a precaution if
+some later MyIDE OSes modify the code in this area (currently the
+MyIDE OSes patch the IRQ handler at a lower memory location).
 

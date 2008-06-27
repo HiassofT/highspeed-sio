@@ -25,7 +25,6 @@ XLSIO	= $E971
 
 TMPVEC	= $E0	; temporary ZP vector
 
-
 	* = ORG
 
 	BPUT 0, TTITL, TTIT
@@ -111,6 +110,33 @@ COP2	LDA XLSIO,X
 	LDA #>(XLSIO+4)
 	STA PSTD+6
 
+.if .def PATCHKEY
+; check if we can patch the keyboard IRQ handler
+
+	LDX #2
+CHKKY	LDA KEYIRQ,X
+	CMP XLKEY,X
+	BNE CHKKY1
+	DEX
+	BPL CHKKY
+	BMI CHKKY2
+
+CHKKY1	PRINT 0, TNOKEY
+	JMP CHKKY4
+
+CHKKY2	LDX #2
+CHKKY3	LDA MYKEY,X
+	STA KEYIRQ,X
+	DEX
+	BPL CHKKY3
+
+	PRINT 0, TKEY
+
+CHKKY4
+
+.endif
+
+
 .IF .DEF ROMABLE
 ; update ROM checksums
 	JSR UPDCSUM
@@ -177,6 +203,14 @@ XLCODE	TSX
 
 MYCODE	NOP
 	JMP PSIO
+
+.if .def PATCHKEY
+; original contents of keyboard IRQ handler
+XLKEY	LDA $D209
+
+; patched contents of keyboard IRQ handler
+MYKEY	JMP PKEY
+.endif
 
 .if .def ROMABLE
 
@@ -305,10 +339,15 @@ TUPDCS	.BYTE "updating ROM checksum",155
 
 .endif
 
+.if .def PATCHKEY
+TNOKEY	.BYTE "unknown ROM, not patching keyboard",155
+TKEY	.BYTE "patched keyboard IRQ handler",155
+.endif
+
 .if .def ROMABLE
-TTIT	.BYTE 155,"Highspeed SIO patch V1.10R",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.12R",155
 .else
-TTIT	.BYTE 155,"Highspeed SIO patch V1.10",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.12",155
 .endif
 	.BYTE "(c) 2008 by Matthias Reichl",155,155
 TTITL	= * - TTIT
@@ -317,10 +356,20 @@ TISP	.BYTE "OS already patched",155
 TINC	.BYTE "incompatible OS",155
 TPAT	.BYTE "patching OS",155
 
+PCODE	= *
+
 .if .def ROMABLE
-PCODE	.incbin "hipatch-code-rom.bin"
+  .if .def PATCHKEY
+	.incbin "hipatch-code-rom-key.bin"
+  .else
+	.incbin "hipatch-code-rom-nokey.bin"
+  .endif
 .else
-PCODE	.incbin "hipatch-code.bin"
+  .if .def PATCHKEY
+	.incbin "hipatch-code-key.bin"
+  .else
+	.incbin "hipatch-code-nokey.bin"
+  .endif
 .endif
 
 	* = $2E0
