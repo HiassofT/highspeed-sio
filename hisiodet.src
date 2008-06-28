@@ -47,11 +47,7 @@ HISIO	LDA DUNIT
 
 	LDA #STDSPD
 	STA SIOSPEED
-	LDA DAUX2
-	PHA
-	LDA DAUX1
-	PHA
-	LDY #$07
+	LDY #$0B
 ?SAVCMD	LDA DCOMND,Y
 	PHA 
 	LDA ?CMD3F,Y	; Happy/Speedy Ultra SIO mode?
@@ -59,29 +55,25 @@ HISIO	LDA DUNIT
 	DEY 
 	BPL ?SAVCMD
 
-	LDA #1
-	JSR DOHIDET
+	JSR ?DODET
 
 	; for testing happy 810 mode, uncomment this and connect a happy 1050
 	;LDY #$FF
 
 	BMI ?NOULTRA
 
-	; enable fast write for happy 1050, otherwise writing may fail
+	; enable fast write for happy 1050, otherwise data might be corrupted
+	; stupid, stupid happy...
 	JSR ?CHKHAP
 
-	LDX DUNIT
 	LDA HIBUF
-	STA SPEEDTB-1,X
-	JMP ?RESCMD
+	JMP ?SETSP2
 
 ?NOULTRA LDA #TURFLG	; Turbo 1050?
-	STA SIOSPEED
 	JSR ?GETST
 	BPL ?SETSPD
 
 	LDA #XFFLG	; XF551?
-	STA SIOSPEED
 	JSR ?GETST
 	BPL ?SETSPD
 
@@ -93,23 +85,19 @@ HISIO	LDA DUNIT
 	LDA #STDSPD	; no, just use standard SIO speed
 	BNE ?SETSP2
 
-?GETST	LDY #$07	; try to get status
-?GETSTL	LDA ?CMDST,Y
-	STA DCOMND,Y
-	DEY
-	BPL ?GETSTL
-	LDA #1
+?GETST	STA SIOSPEED
+	LDA #4
+	STA DBYTLO
+	LDX #$53
+	LDA #$40
+?DOIMM	STX DCOMND
+	STA DSTATS
+?DODET	LDA #1
 	JMP DOHIDET
 
-?CHKHAP	LDA #$48	; check for happy 810
-	STA DCOMND
+?CHKHAP	LDX #$48	; check for happy 810
 	LDA #0
-	STA DSTATS
-	STA DAUX2
-	LDA #$20
-	STA DAUX1
-	LDA #1
-	JMP DOHIDET
+	BEQ ?DOIMM
 
 ?SETSPD	LDA SIOSPEED
 ?SETSP2	LDX DUNIT	
@@ -119,15 +107,11 @@ HISIO	LDA DUNIT
 ?RESLP	PLA 
 	STA DCOMND,Y
 	INY 
-	CPY #$0A
+	CPY #$0C
 	BCC ?RESLP
 	PLA
 	STA SOUNDR
 	JMP ?DOSIO
 
 ?CMD3F	.BYTE $3F,$40
-	.WORD HIBUF,1,1
-
-?CMDST	.BYTE $53,$40
-	.WORD HIBUF,1,4
-
+	.WORD HIBUF,1,1,$20

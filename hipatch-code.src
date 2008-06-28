@@ -16,6 +16,10 @@
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ;
+;  Changes:
+;  06/26/2008 Matthias Reichl
+;    - add (optional) keyboard IRQ patch
+
 
 	.include "hisio.inc"
 	.include "hipatch.inc"
@@ -80,5 +84,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "1.12 Hias 080627"
+	.BYTE "Hias 1.12 080628"
 
