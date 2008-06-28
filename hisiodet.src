@@ -62,8 +62,13 @@ HISIO	LDA DUNIT
 
 	BMI ?NOULTRA
 
-	; enable fast write for happy 1050, otherwise data might be corrupted
-	; stupid, stupid happy...
+	LDA HIBUF
+	CMP #$0A	; speed byte $0A is most certainly a Happy 1050
+	BNE ?SETSP2
+
+	; enable fast write for Happy 1050 (but not for other drives),
+	; otherwise data might be corrupted
+	; stupid, stupid Happy...
 	JSR ?CHKHAP
 
 	LDA HIBUF
