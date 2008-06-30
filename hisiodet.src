@@ -20,7 +20,7 @@
 HISIO	CLC
 	LDA DDEVIC
 	ADC DUNIT
-	ADC #$CF	; DEVICE + DUNIT - $31
+	ADC #$CE	; DEVICE + DUNIT - $31 - 1
 	STA MYDUNIT
 	CMP #8
 	BCC ?DOSIO
@@ -29,14 +29,15 @@ HISIO	CLC
 ; now the SIO code is only called if the device is in the range $31..$38,
 ; all other devices just reset the speed table.
 
-	LDX #8
-?CLRLP	STA SPEEDTB-1,X
+	LDA #0
+	LDX #7
+?CLRLP	STA SPEEDTB,X
 	DEX 
-	BNE ?CLRLP
+	BPL ?CLRLP
 	RTS 
 
 ?DOSIO	LDX MYDUNIT
-	LDA SPEEDTB-1,X
+	LDA SPEEDTB,X
 	BEQ ?DOCHK
 
 	STA SIOSPEED
@@ -109,7 +110,7 @@ HISIO	CLC
 
 ?SETSPD	LDA SIOSPEED
 ?SETSP2	LDX MYDUNIT	
-	STA SPEEDTB-1,X
+	STA SPEEDTB,X
 
 ?RESCMD	LDY #$00
 ?RESLP	PLA 
