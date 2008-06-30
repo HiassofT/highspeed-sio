@@ -19,36 +19,37 @@
 
 .if .def ROMABLE
   RAMBUF = $0100
-  .if .def PATCHKEY
-    RESETAD = $010E
-  .else
-    RESETAD = $010D
-  .endif
 .else
   RAMBUF = $CC00
-  RESETAD = $0100
 .endif
 
-SIOSPEED = RAMBUF
-SPEEDTB	= RAMBUF+1
-HIBUF	= RAMBUF+9	; .. RAMBUF+12 (4 bytes for get status)
+SIOSPEED = RAMBUF	; speed byte for current operation
+SPEEDTB	= RAMBUF+1	; 8-byte table for drive speeds
 
 .if .def PATCHKEY
-; add a config byte to enable/disable highspeed SIO with keyboard
-HIENAB	= RAMBUF+12
+  ; add a config byte to enable/disable highspeed SIO with keyboard
+  HIENAB = RAMBUF+9
+  HIBUF = RAMBUF+10	; .. RAMBUF+13 (4 bytes for get status)
 .else
+  HIBUF = RAMBUF+9	; .. RAMBUF+12
 .endif
 
-PDEST = $CC00
-PSTD = $CC10
-PSIO = $CC20
+; address of reset handler
+.if .def ROMABLE
+  RESETAD = HIBUF+4	; after end of highspeed SIO data
+.else
+  RESETAD = $0100	; at beginning of page 1
+.endif
+
+PDEST = $CC00		; starting address of code patch
+PSTD = $CC10		; original SIO code + JMP back
+PSIO = $CC20		; start of new highspeed code
 
 .if .def PATCHKEY
-; patched keyboard IRQ handler
-PKEY = $CF80
+PKEY = $CF80		; new keyboard IRQ handler
 
-KEYIRQ  = $FC20 ; this contains "LDA $D209"
-KEYIRQ2 = $FC23 ; next instruction of IRQ handler
+KEYIRQ  = $FC20 	; this contains "LDA $D209"
+KEYIRQ2 = $FC23 	; next instruction of IRQ handler
 .endif
 
-PVER = $CFF0
+PVER = $CFF0		; 16 bytes version string

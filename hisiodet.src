@@ -17,8 +17,17 @@
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ;
 
-HISIO	LDA DUNIT
-	BNE ?DOSIO	; DUNIT = 0 clears speed table
+HISIO	CLC
+	LDA DDEVIC
+	ADC DUNIT
+	ADC #$CF	; DEVICE + DUNIT - $31
+	STA MYDUNIT
+	CMP #8
+	BCC ?DOSIO
+
+; in old code there was only a check for DUNIT=0 to clear speed table.
+; now the SIO code is only called if the device is in the range $31..$38,
+; all other devices just reset the speed table.
 
 	LDX #8
 ?CLRLP	STA SPEEDTB-1,X
@@ -26,16 +35,10 @@ HISIO	LDA DUNIT
 	BNE ?CLRLP
 	RTS 
 
-?DOSIO	LDX DUNIT
+?DOSIO	LDX MYDUNIT
 	LDA SPEEDTB-1,X
 	BEQ ?DOCHK
 
-.IF .DEF USENOHIOS
-	CMP #STDSPD
-	BNE ?NOSTD
-	JMP $E459
-?NOSTD	= *
-.ENDIF
 	STA SIOSPEED
 	JMP DOHISIO
 
@@ -47,7 +50,7 @@ HISIO	LDA DUNIT
 
 	LDA #STDSPD
 	STA SIOSPEED
-	LDY #$0B
+	LDY #$09
 ?SAVCMD	LDA DCOMND,Y
 	PHA 
 	LDA ?CMD3F,Y	; Happy/Speedy Ultra SIO mode?
@@ -105,14 +108,14 @@ HISIO	LDA DUNIT
 	BEQ ?DOIMM
 
 ?SETSPD	LDA SIOSPEED
-?SETSP2	LDX DUNIT	
+?SETSP2	LDX MYDUNIT	
 	STA SPEEDTB-1,X
 
 ?RESCMD	LDY #$00
 ?RESLP	PLA 
 	STA DCOMND,Y
 	INY 
-	CPY #$0C
+	CPY #$0A
 	BCC ?RESLP
 	PLA
 	STA SOUNDR

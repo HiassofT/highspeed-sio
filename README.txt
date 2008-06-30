@@ -109,7 +109,7 @@ your Atari.
 If you decided to also patch the keyboard IRQ handler, the following
 keystrokes are available to control the highspeed SIO patch:
 
-SHIFT+CONTROL+S    Clear SIO speed table
+SHIFT+CONTROL+S    Clear SIO speed table and enable highspeed SIO
 SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
 SHIFT+CONTROL+H    Enable highspeed SIO
 SHIFT+CONTROL+DEL  Coldstart Atari
@@ -188,12 +188,11 @@ which type of highspeed SIO to use.
 First, the code tries to send a $3F command (get speed byte) to the
 drive. All ultra-speed capable devices support this command and will
 return the pokey-divisor byte. If this command succeeds, the byte is
-stored in the table. In addition to that, a $48 command with DAUX
-set to $0020 (Happy 1050: enable fast writes) is also sent to the drive.
-Although other drives don't need this (and, most likely, don't even
-support this command), Happy drives might corrupt data when writing
-to disk in highspeed mode if fast write is disabled (thanks to ijor
-for pointing this out!).
+stored in the table. Then it's checked if the byte is $0A. If this
+is the case, the drive is most certainly a Happy 1050 and a $48 command
+with DAUX=$0020 is sent. This enables fast writes and is needed
+by the Happy drives, otherwise they might write corrupted data to
+the disk when writing in highspeed mode (thanks to ijor for this info!).
 
 Then, the code tries to send a $53 command (get status) in 1050 Turbo
 and XF551 mode. If it's a 1050 Turbo, $80 is stored in the speed table,

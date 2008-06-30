@@ -36,12 +36,13 @@ STDSIO	= PSTD
 	LDA HIENAB
 	BNE STDSIO
 .endif
-	LDA $0300
+	CLC
+	LDA DDEVIC
+	ADC DUNIT
+	ADC #$FF
 	CMP #$31
-	BNE STDSIO
-	LDA $0301
-	BEQ STDSIO
-	CMP #9
+	BCC STDSIO
+	CMP #$39
 	BCS STDSIO
 
 	.include "hisiodet.src"
@@ -55,13 +56,13 @@ STDSIO	= PSTD
 	BNE PKEY1
 	JMP $E477
 PKEY1	PHA
-	CMP #$FE	; shift-control-s = reset speed table
+	CMP #$FE	; shift-control-s = reset all variables
 	BNE PKEY3
 	TXA
 	PHA
 	LDA #0
-	LDX #7
-PKEY2	STA SPEEDTB,X
+	LDX #8		; HIENAB must be directly after speed table!
+PKEY2	STA SPEEDTB,X	; clear drive speed table
 	DEX
 	BPL PKEY2
 	PLA
@@ -84,5 +85,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.12 080628"
+	.BYTE "Hias 1.12 080629"
 
