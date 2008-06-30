@@ -36,13 +36,12 @@ STDSIO	= PSTD
 	LDA HIENAB
 	BNE STDSIO
 .endif
-	CLC
 	LDA DDEVIC
-	ADC DUNIT
-	ADC #$FF
 	CMP #$31
-	BCC STDSIO
-	CMP #$39
+	BNE STDSIO
+	LDA DUNIT
+	BEQ STDSIO
+	CMP #9
 	BCS STDSIO
 
 	.include "hisiodet.src"
@@ -85,5 +84,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.12 080629"
+	.BYTE "Hias 1.12 080630"
 

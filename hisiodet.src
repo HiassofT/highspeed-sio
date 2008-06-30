@@ -17,27 +17,22 @@
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ;
 
-HISIO	CLC
-	LDA DDEVIC
-	ADC DUNIT
-	ADC #$CE	; DEVICE + DUNIT - $31 - 1
-	STA MYDUNIT
-	CMP #8
-	BCC ?DOSIO
+HISIO
 
-; in old code there was only a check for DUNIT=0 to clear speed table.
-; now the SIO code is only called if the device is in the range $31..$38,
-; all other devices just reset the speed table.
+; A_IS_CDEVIC is set by hipatch-code to indicated A already
+; contains the value for CDEVIC.
 
-	LDA #0
-	LDX #7
+	LDA DUNIT
+	BNE ?DOSIO
+
+	LDX #7		; DUNIT = 0 clears speed table
 ?CLRLP	STA SPEEDTB,X
-	DEX 
+	DEX
 	BPL ?CLRLP
-	RTS 
+	RTS
 
-?DOSIO	LDX MYDUNIT
-	LDA SPEEDTB,X
+?DOSIO	LDX DUNIT
+	LDA SPEEDTB-1,X
 	BEQ ?DOCHK
 
 	STA SIOSPEED
@@ -109,8 +104,8 @@ HISIO	CLC
 	BEQ ?DOIMM
 
 ?SETSPD	LDA SIOSPEED
-?SETSP2	LDX MYDUNIT	
-	STA SPEEDTB,X
+?SETSP2	LDX DUNIT	
+	STA SPEEDTB-1,X
 
 ?RESCMD	LDY #$00
 ?RESLP	PLA 

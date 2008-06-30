@@ -36,9 +36,6 @@
 	MYSPEED = $3A
 	STACKP = $3B
 
-; temporarily used by detection code to store index in speed table
-	MYDUNIT = $3C
-
 ;	CRETRY = $29C
 ;	DRETRY = $2BD
 ;	STACKP = $318
