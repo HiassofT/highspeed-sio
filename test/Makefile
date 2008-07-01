@@ -1,4 +1,4 @@
-all: diag.atr diagt.atr shawn.atr
+all: diag.atr diagt.atr commands.atr
 
 ATASM=atasm
 #ATASMFLAGS=
@@ -15,8 +15,8 @@ diag.atr: diag.src $(HISIOSRC)
 diagt.atr: diagt.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -odiagt.atr diagt.src
 
-shawn.atr: shawn.src $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -oshawn.atr shawn.src
+commands.atr: commands.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -ocommands.atr commands.src
 
 clean:
 	rm -f *.bin *.com *.atr *.o patchrom.exe patchrom

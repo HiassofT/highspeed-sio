@@ -15,16 +15,18 @@ LP1	LDA %1,X
 	JSR PSIO
 	JSR HISIO
 	JSR PRES
-	LDX #$B
-LP2	LDA %1,X
-	STA $300,X
-	DEX
-	BPL LP2
-	JSR PSIO
+;
+;	LDX #$B
+;LP2	LDA %1,X
+;	STA $300,X
+;	DEX
+;	BPL LP2
+;	JSR PSIO
 	;JSR $E459
 	;JSR PRES
 	;LDA #155
 	;JSR PUTCHAR
+	;JSR GETKEY
 	.ENDM
 
 	* = START-16
@@ -70,13 +72,24 @@ DOTEST	LDA #0
 ;	SIOTEST SEC720
 ;	SIOTEST APETIME
 ;	SIOTEST SECBIG
-	SIOTEST FMTSD
+;	SIOTEST FMTSD
 
-TEND	JMP TEND
+	SIOTEST GETSTAT
+	SIOTEST SPDCMD
+	SIOTEST GETPER
+	SIOTEST SETPER
+	SIOTEST READ1
+	SIOTEST WRITE1
+	SIOTEST PUT1
+	SIOTEST HAPCMD
+	SIOTEST FLUSH
+
+TEND	JSR GETKEY
+	JMP RUN
 
 XRTS	RTS
 
-DRIVENO	= 2
+DRIVENO	= 1
 DIRIN	= $40
 DIROUT	= $80
 
@@ -103,6 +116,32 @@ SECBIG	SIOGEN 'R, DIRIN, 129, 720
 ; format disk in single density
 FMTSD	SIOGEN $21, DIRIN, 128, 0
 
+; get status from drive
+GETSTAT	SIOGEN 'S, DIRIN, 4, 0
+
+; read percom
+GETPER	SIOGEN $4E, DIRIN, 12, 0
+
+; write percom
+SETPER	SIOGEN $4F, DIROUT, 12, 0
+
+; read sector 1
+READ1	SIOGEN 'R, DIRIN, 128, 1
+
+; write sector 1
+WRITE1	SIOGEN 'W, DIROUT, 128, 1
+
+; put (write no verify) sector 1
+PUT1	SIOGEN 'P, DIROUT, 128, 1
+
+; happy command (enable fast writes)
+HAPCMD	SIOGEN $48, 0, 0, $0020
+
+; get speed byte
+SPDCMD	SIOGEN $3F, DIRIN, 1, 0
+
+; flush buffers
+FLUSH	SIOGEN 'Q, 0, 0, 0
 
 	.include "hisiodet.src"
 	.include "hisiocode.src"
