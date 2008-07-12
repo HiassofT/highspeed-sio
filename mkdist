@@ -8,7 +8,7 @@ fi
 NAME=hipatch-$VER
 
 rm -rf dist/tmp
-mkdir -p dist/tmp/src/patchdisk
+mkdir -p dist/tmp/src
 
 cp Makefile *.src *.inc *.cpp *.h hipatch-code-rom*.bin dist/tmp/src
 cp README.txt LICENSE hipatch.atr patchrom.exe hisio*.com dumpos.com dist/tmp
