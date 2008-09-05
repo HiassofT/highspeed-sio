@@ -42,6 +42,8 @@ hision.com: hipatch.src hipatch-code-nokey.bin hipatch.inc cio.inc
 hisiorn.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -ohisiorn.com -dROMABLE=1 hipatch.src
 
+hisio-reloc.bin: $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -ohisio-reloc.bin -dRELOCTABLE=1 -dSTART=4096 hisio.src
 
 diag.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src

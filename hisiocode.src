@@ -41,7 +41,7 @@ DOHIDET	STA DRETRY
 
 	TSX 
 	STX STACKP
-	LDA SIOSPEED
+?ABS50	LDA SIOSPEED
 	STA MYSPEED
 
 ?DRETLP	LDA #$0D
@@ -136,7 +136,7 @@ DOHIDET	STA DRETRY
 ?NOSND	STX AUDC4
 
 ; transmit command frame
-	JSR ?SENDBLK
+?ABS51	JSR ?SENDBLK
 
 	BIT MYSPEED
 	BPL ?NOTUR1	; 1050 Turbo?
@@ -145,8 +145,8 @@ DOHIDET	STA DRETRY
 
 ?NOTUR1	
 
-	JSR ?CHKST	; read command frame ACK/NAK
-	JSR ?CLRTIM1	; got ACK, clear timer
+?ABS52	JSR ?CHKST	; read command frame ACK/NAK
+?ABS53	JSR ?CLRTIM1	; got ACK, clear timer
 
 .if .def DIAGSIO
 ; phase 01 : send data frame (only if write operation)
@@ -172,14 +172,14 @@ DOHIDET	STA DRETRY
 	LDA DSTATS
 	BPL ?NOSEND
 
-	JSR ?SENDBLK	; transmit data frame
+?ABS54	JSR ?SENDBLK	; transmit data frame
 
 .if .def DIAGSIO
 ; phase 02 (write) : receive data frame ACK
 	INC ?DIAGST
 .endif
 
-	JSR ?CHKST	; receive data frame ACK/NAK
+?ABS55	JSR ?CHKST	; receive data frame ACK/NAK
 
 ?NOSEND	
 
@@ -188,7 +188,7 @@ DOHIDET	STA DRETRY
 	INC ?DIAGST
 .endif
 
-	JSR ?WAITCPL	; set command timeout and wait for command complete
+?ABS56	JSR ?WAITCPL	; set command timeout and wait for command complete
 	BIT DSTATS
 	BVC ?SIOEND
 
@@ -197,15 +197,16 @@ DOHIDET	STA DRETRY
 	INC ?DIAGST
 .endif
 
-	JSR ?GETBLK	; receive data block
+?ABS57	JSR ?GETBLK	; receive data block
 
+?ABS58
 ?SIOEND	JSR ?CLEANUP	; reset timers and pokey
 	LDY STATUS	; was the command successful?
 	BEQ ?ENDCMD	; yes, we are done
 
 	DEC CRETRY	; retry sending command frame?
 	BEQ ?CHKDR	; no, already tried 13 times
-	JMP ?CRETLP	; yes, we have some more retries
+?ABS59	JMP ?CRETLP	; yes, we have some more retries
 ?CHKDR	
 
 	DEC DRETRY	; any more command retries?
@@ -214,6 +215,7 @@ DOHIDET	STA DRETRY
 	BEQ ?GODR	; don't fallback speed on command errors
 	LDA #STDSPD	; try it with standard speed this time
 	STA MYSPEED
+?ABS60
 ?GODR	JMP ?DRETLP	; yes, try it again
 ?ENDCMD	
 
@@ -245,7 +247,7 @@ DOHIDET	STA DRETRY
 	BNE ?SND2	; always
 	
 ?SND1	LDA (BUFRLO),Y
-	JSR ?SENDBYT	; normal send, wait for pokey clear
+?ABS61	JSR ?SENDBYT	; normal send, wait for pokey clear
 	INY 
 	BNE ?SND2
 	INC BUFRHI
@@ -262,7 +264,7 @@ DOHIDET	STA DRETRY
 	LDA BFENHI
 	BNE ?SND1
 	LDA CHKSUM
-	JSR ?SENDBYT
+?ABS62	JSR ?SENDBYT
 ?WTSND	LDA IRQST
 	AND #IMSCPL	; wait until transmit complete
 	BNE ?WTSND
@@ -274,9 +276,10 @@ DOHIDET	STA DRETRY
 ; note: pokey is already set to receive mode (in rdquit),
 ; so we don't need to do the setup again
 
+?ABS63
 ?GETLP	JSR ?GETBYTE
 	STA (BUFRLO),Y
-	JSR ?ADDSUM
+?ABS64	JSR ?ADDSUM
 	INY 
 	BNE ?GET1
 	INC BUFRHI
@@ -285,7 +288,7 @@ DOHIDET	STA DRETRY
 	BNE ?GETLP
 	LDA BFENHI
 	BNE ?GETLP
-	JSR ?GETBYTE
+?ABS65	JSR ?GETBYTE
 
 .if .def DIAGSIO
 	STA ?DIAGBT
@@ -310,22 +313,34 @@ DOHIDET	STA DRETRY
 ; set timer1 Y*256 + X cycles
 ?STIMOU2	LDA #1
 	JSR SETVBV
+.if .def RELOCTABLE
+?ABS66	LDA ?ERRTOA
+	STA CDTMA1
+?ABS67	LDA ?ERRTOA+1
+	STA CDTMA1+1
+.else
 	LDA #<?ERRTO
 	STA CDTMA1
 	LDA #>?ERRTO
 	STA CDTMA1+1
+.endif
 ?RDOK	LDA #0
 	RTS
+
+.if .def RELOCTABLE
+?ABS68
+?ERRTOA	.WORD ?ERRTO
+.endif
 
 ; read ACK/NAK, handle ERROR as NAK
 ; used when waiting for command frame ACK and data frame ACK
 
 ?CHKST	
 	LDY #$02
-	JSR ?STIMOUT
+?ABS69	JSR ?STIMOUT
 	LDA #MSKRECV
 	STA IRQEN
-	JSR ?RDACK
+?ABS70	JSR ?RDACK
 	BNE ?ERRNAK	; catch ERROR and handle it like NAK
 ?CHKOK	RTS
 
@@ -341,7 +356,7 @@ DOHIDET	STA DRETRY
 	ROR 
 	AND #$C0
 	TAY 
-	JSR ?STIMOU2
+?ABS71	JSR ?STIMOU2
 
 ; receive ACK/NAK, COMPLETE/ERROR
 
@@ -350,7 +365,7 @@ DOHIDET	STA DRETRY
 	STA SKREST
 	LDA #$3C	; clear command line
 	STA PBCTL
-	JSR ?GETBYTE
+?ABS72	JSR ?GETBYTE
 
 .if .def DIAGSIO
 	STA ?DIAGBT
@@ -394,7 +409,7 @@ DOHIDET	STA DRETRY
 
 	LDX STACKP
 	TXS
-	JMP ?SIOEND	; we got an error, cleanup and try to restart
+?ABS73	JMP ?SIOEND	; we got an error, cleanup and try to restart
 
 ?RDERR	LDY #ERRDEV	; command error
 	STY STATUS
@@ -408,10 +423,10 @@ DOHIDET	STA DRETRY
 	STA IRQEN
 	LDX STACKP
 	TXS
-	JSR ?CLEANUP
+?ABS74	JSR ?CLEANUP
 	LDY #ERRBRK	; set error code $80
 	STY STATUS
-	JMP ?ENDCMD	; end command without retrying
+?ABS75	JMP ?ENDCMD	; end command without retrying
 
 ; read a byte
 
