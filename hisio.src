@@ -60,6 +60,9 @@
 ;    - always configure happy drives to use fast writes
 ;      thanks to ijor for pointing out that otherwise the happy
 ;      might corrupt data when writing to the disk!
+;
+;  09/05/2008 Matthias Reichl
+;    - added ?ABSxx labels to make the code relocatable again
 
 	.include "hisio.inc"
 
