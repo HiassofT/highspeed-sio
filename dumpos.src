@@ -22,7 +22,9 @@ DSTVEC	= $E2
 
 	.include "cio.inc"
 
-ORG	= $3000
+.bank
+
+ORG	= $6000
 
 	* = ORG
 
@@ -149,6 +151,8 @@ TXITL	= * -TXIT
 FNAM	= *
 
 BUF	= * + $100
+
+.bank
 
 	* = $2E0
 	.WORD ORG
