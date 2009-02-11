@@ -43,7 +43,7 @@ OCOUNT	= $E4
 	STA 3
 
 
-RUN	LDA #3
+RUN	LDA #1
 	STA MYSPEED
 
 ; set SIO parameters for D2:
@@ -67,12 +67,17 @@ TDIR	= $40
 ;TCMD	= 'P
 ;TDIR	= $80
 
-;TBYT	= $80
-TBYT	= $100
+TBYT	= $80
+;TBYT	= $100
 
-DOTEST	JSR GETKEY	; wait for a keypress first
+DOTEST
+	LDA #0
+;	STA 559
+;	STA $D400
 
-	LDA #TCMD
+	JSR GETKEY	; wait for a keypress first
+
+TESTLP	LDA #TCMD
 	STA $302
 	LDA #<TBYT
 	STA DBYTLO
@@ -94,10 +99,17 @@ DOTEST	JSR GETKEY	; wait for a keypress first
 	STA OCOUNT+1
 	STA FCOUNT
 	STA FCOUNT+1
-	;STA $D40E
-	STA $D400
+	STA $D40E
+;	STA 559
+;	STA $D400
+	STA 20
 
 	JSR DOHISIO
+
+	JMP TESTLP
+
+	LDA #$40
+	STA $D40E
 
 X	JMP X
 
@@ -139,6 +151,9 @@ DOHISIO	SEI
 ; transmit command frame
 	JSR ?SENDBLK
 
+;	LDA #$C0
+;	STA IRQEN
+
 	LDA #MSKRECV	; enable receive interrupt
 	STA IRQEN
 
@@ -170,8 +185,9 @@ DOHISIO	SEI
 	STA BUF,Y
 	INY
 	STY BCOUNT
+	CPY #131
 	BNE ?TESTLP
-XXX	JMP XXX
+	RTS
 
 ?TESTF	INC FCOUNT
 	BNE ?TESTLP

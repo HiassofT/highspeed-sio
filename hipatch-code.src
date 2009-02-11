@@ -19,6 +19,8 @@
 ;  Changes:
 ;  06/26/2008 Matthias Reichl
 ;    - add (optional) keyboard IRQ patch
+;  02/10/2009 Matthias Reichl
+;    - added NMI patch (for insane speeds)
 
 
 	.include "hisio.inc"
@@ -46,6 +48,9 @@ STDSIO	= PSTD
 
 	.include "hisiodet.src"
 	.include "hisiocode.src"
+
+	* = PNMI
+	.include "fastnmi.src"
 
 .if .def PATCHKEY
 	* = PKEY
@@ -84,5 +89,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.12 080902"
+	.BYTE "Hias 1.14 090210"
 

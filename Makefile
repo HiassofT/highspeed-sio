@@ -4,7 +4,7 @@ all: hipatch.atr patchrom patchrom.exe
 
 ATASM=atasm
 ATASMFLAGS=
-#ATASMFLAGS=-s
+#ATASMFLAGS=-s -v
 
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
@@ -14,7 +14,9 @@ HISIOSRC=hisio.src hisiocode.src hisiodet.src hisio.inc
 %.com: %.src
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
-COMS = hisio.com hisior.com hision.com hisiorn.com dumpos.com
+COMS =	hisio.com hisior.com hision.com hisiorn.com \
+	hisioi.com hisiori.com hisioni.com hisiorni.com \
+	dumpos.com 
 
 hipatch-code-key.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-key.bin -dPATCHKEY=1 hipatch-code.src
@@ -41,6 +43,20 @@ hision.com: hipatch.src hipatch-code-nokey.bin hipatch.inc cio.inc
 
 hisiorn.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -ohisiorn.com -dROMABLE=1 hipatch.src
+
+
+hisioi.com: hipatch.src hipatch-code-key.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisioi.com -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+
+hisiori.com: hipatch.src hipatch-code-rom-key.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisiori.com -dROMABLE=1 -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+
+hisioni.com: hipatch.src hipatch-code-nokey.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisioni.com -dPATCHNMI=1 hipatch.src
+
+hisiorni.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -ohisiorni.com -dROMABLE=1 -dPATCHNMI=1 hipatch.src
+
 
 hisio-reloc.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -ohisio-reloc.bin -dRELOCTABLE=1 -dSTART=4096 hisio.src

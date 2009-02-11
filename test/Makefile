@@ -1,4 +1,4 @@
-all: diag.atr diagt.atr commands.atr
+all: diag.atr diagt.atr commands.atr testov.atr
 
 ATASM=atasm
 #ATASMFLAGS=
@@ -9,7 +9,7 @@ CXXFLAGS = -W -Wall -g
 
 HISIOSRC=../hisio.src ../hisiocode.src ../hisiodet.src ../hisio.inc
 
-diag.atr: diag.src $(HISIOSRC)
+diag.atr: diag.src $(HISIOSRC) fastvbi.src
 	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src
 
 diagt.atr: diagt.src $(HISIOSRC)
@@ -17,6 +17,10 @@ diagt.atr: diagt.src $(HISIOSRC)
 
 commands.atr: commands.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -ocommands.atr commands.src
+
+testov.atr: testov.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -otestov.atr testov.src
+
 
 clean:
 	rm -f *.bin *.com *.atr *.o patchrom.exe patchrom

@@ -59,6 +59,15 @@ static unsigned char new_keycode[keycode_len] = {
 	PKEYIRQ & 0xff,
 	PKEYIRQ >> 8 };
 
+#define nmivec_len 2
+static unsigned char orig_nmivec[nmivec_len] = {
+	NMIHAN & 0xff,
+	NMIHAN >> 8 };
+
+static unsigned char new_nmivec[nmivec_len] = {
+	PNMI & 0xff,
+	PNMI >> 8 };
+
 #define CSUM1_ADR 0xC000
 #define CSUM2_ADR 0xFFF8
 
@@ -130,17 +139,27 @@ int main(int argc, char** argv)
 	bool need_csum_update;
 
 	bool patch_keyirq = true;
-	unsigned int idx = 1;
+	bool patch_nmi = false;
+	int idx = 1;
 
-	printf("patchrom V1.12 (c) 2006-2008 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.14 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
 
-	if (argc < 3) {
+	if (argc < 2) {
 		goto usage;
 	}
 
 	if (argv[idx][0] == '-' && argv[idx][1] == 'n') {
 		patch_keyirq = false;
 		idx++;
+	}
+
+	if (argv[idx][0] == '-' && argv[idx][1] == 'i') {
+		patch_nmi = true;
+		idx++;
+	}
+
+	if (idx+2 != argc) {
+		goto usage;
 	}
 
 	origfile = argv[idx++];
@@ -192,6 +211,16 @@ int main(int argc, char** argv)
 			printf("patched keyboard IRQ handler\n");
 		} else {
 			printf("unknown OS, not patching keyboard IRQ handler\n");
+		}
+	}
+
+	// patch NMI handler
+	if (patch_nmi) {
+		if (memcmp(rombuf + NMIVEC -  ROMBASE, orig_nmivec, nmivec_len) == 0) {
+			memcpy(rombuf + NMIVEC -  ROMBASE, new_nmivec, nmivec_len);
+			printf("patched NMI handler\n");
+		} else {
+			printf("unknown OS, not patching NMI handler\n");
 		}
 	}
 

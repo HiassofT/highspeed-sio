@@ -1,0 +1,73 @@
+;  fastnmi - short immediate VBI code for insane transfer speeds
+;
+;  Copyright 2009 Matthias Reichl
+;
+;  This program is free software; you can redistribute it and/or modify
+;  it under the terms of the GNU General Public License as published by
+;  the Free Software Foundation; either version 2 of the License, or
+;  (at your option) any later version.
+;
+;  This program is distributed in the hope that it will be useful,
+;  but WITHOUT ANY WARRANTY; without even the implied warranty of
+;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;  GNU General Public License for more details.
+;
+;  You should have received a copy of the GNU General Public License
+;  along with this program; if not, write to the Free Software
+;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+;
+
+
+FASTNMI	CLD
+	PHA
+	LDA CRITIC
+	BEQ ?NOCRIT
+
+	LDA $D40F
+	STA $D40F
+	BMI ?IGNDLI
+
+	INC 20
+	BNE ?NOC1
+	INC 19
+	BNE ?NOC1
+	INC 18
+
+?NOC1	LDA CDTMV1
+	BNE ?NOTI11
+	LDA CDTMV1+1
+	BEQ ?NOTI12
+	DEC CDTMV1+1
+?NOTI11	DEC CDTMV1
+	BNE ?NOTI12
+	LDA CDTMV1+1
+	BEQ ?RUNT1
+?NOTI12 PLA
+	RTI
+
+?RUNT1	TXA
+	PHA
+	TYA
+	PHA
+	JSR ?RUNT11
+	PLA
+	TAY
+	PLA
+	TAX
+?IGNDLI	PLA
+	RTI
+
+?NOCRIT	BIT $D40F
+	BPL ?NODLI
+	PLA
+	JMP ($200)
+
+?NODLI	TXA
+	PHA
+	TYA
+	PHA
+	STA $D40F
+	JMP ($222)
+
+?RUNT11	JMP (CDTMA1)
+

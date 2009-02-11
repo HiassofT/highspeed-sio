@@ -27,5 +27,15 @@
 #define KEYIRQ 0xFC20
 
 /* address of new, patched IRQ code */
-#define PKEYIRQ 0xCF80
+#define PKEYIRQ 0xCFA0
+
+/* address of NMI vector */
+#define NMIVEC 0xFFFA
+
+/* address of original NMI handler */
+#define NMIHAN 0xC018
+
+/* address of new NMI code */
+#define PNMI 0xCF40
+
 

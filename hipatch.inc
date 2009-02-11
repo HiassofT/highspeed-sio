@@ -46,10 +46,12 @@ PSTD = $CC10		; original SIO code + JMP back
 PSIO = $CC20		; start of new highspeed code
 
 .if .def PATCHKEY
-PKEY = $CF80		; new keyboard IRQ handler
+PKEY = $CFA0		; new keyboard IRQ handler
 
 KEYIRQ  = $FC20 	; this contains "LDA $D209"
 KEYIRQ2 = $FC23 	; next instruction of IRQ handler
 .endif
+
+PNMI = $CF40
 
 PVER = $CFF0		; 16 bytes version string

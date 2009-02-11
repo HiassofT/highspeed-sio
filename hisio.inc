@@ -77,7 +77,7 @@
 
 ; IRQEN masks
 	IMBRK = $80	; break key pressed
-	IMKBD = $40	; break key pressed
+	IMKBD = $40	; key pressed
 	IMRECV = $20	; byte received
 	IMSEND = $10	; ready to send next byte
 	IMSCPL = $08	; transmission complete
@@ -88,8 +88,8 @@
 	RMSEND = $EF
 
 ; standard masks: break + send/receive + keyboard (kbd not handeled)
-	MSKRECV = $E0
-	MSKSEND = $D0
+	MSKRECV = $A0
+	MSKSEND = $90
 
 ; Pokey SKCTL value for transmitting data (sync. send)
 	SKSEND = $23

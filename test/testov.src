@@ -1,0 +1,66 @@
+;  Highspeed SIO test for overrun
+;
+
+DIAGSIO = 1
+
+	.include "cio.inc"
+	.include "hisio.inc"
+
+START	= $2000
+BUF	= $3000
+
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+       
+	SEI
+	LDA #0
+	STA IRQEN
+	LDA #SKRECV
+;	LDA #SKSEND
+	STA SKCTL
+	STA SKREST
+	LDA #$28
+	STA AUDCTL
+	LDA #$A0
+	STA AUDC4
+	LDA #$28
+;	LDA #4
+;	LDA #0
+	STA AUDF3
+	LDA #0
+	STA AUDF4
+
+	LDA #$F8
+	STA IRQEN
+
+	LDY #0
+LOOP	LDA IRQST
+	STA $9C40
+	LDA SKSTAT
+	STA $9C41
+	JMP LOOP
+
+XRTS	RTS
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *
