@@ -1,6 +1,6 @@
 #all: hipatch.atr patchrom patchrom.exe
 
-all: hipatch.atr diag.atr diag-ext.atr patchrom patchrom.exe
+all: hipatch.atr diag.atr diag-nodma.atr diag-ext.atr patchrom patchrom.exe
 
 ATASM=atasm
 ATASMFLAGS=
@@ -68,8 +68,11 @@ diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
 diag.atr: diag.src $(HISIOSRC) fastnmi.src
 	$(ATASM) $(ATASMFLAGS) -r -odiag.atr -dSHIPDIAG=1 diag.src
 
+diag-nodma.atr: diag.src $(HISIOSRC) fastnmi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag-nodma.atr -dSHIPDIAG=2 diag.src
+
 diag-ext.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag-ext.atr -dSHIPDIAG=2 diag.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag-ext.atr -dSHIPDIAG=3 diag.src
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src

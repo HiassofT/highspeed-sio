@@ -9,6 +9,7 @@
 ; disable retries and fallback to standard speed
 ; (even in non-diag mode)
 DIAGNORET = 1
+; SCREENOFF = 1
 
 ; DIAGSIO = 1
 
@@ -64,6 +65,13 @@ DIAGTX = 1
 .endif
 
 .if SHIPDIAG=2
+; do timing tests with unmodified SIO code, Antic DMA disabled
+DIAGNORET = 1
+DIAGTX = 1
+SCREENOFF = 1
+.endif
+
+.if SHIPDIAG=3
 ; test with all diags in SIO code
 DIAGSIO = 1
 DIAGTIM	= 1
@@ -113,14 +121,7 @@ TMPVEC	= $E0
 	STA 3
 
 
-RUN	
-; reboot if select is pressed
-	LDA 53279
-	CMP #5
-	BNE RUN2
-	JMP $E477
-
-RUN2	LDA #0
+RUN	LDA #0
 	STA $301
 	JSR HISIO ; clear speed table
 
@@ -174,8 +175,11 @@ DOTEST
 	BPUT 0, MLEN, MTXT
 
 	JSR GETKEY	; wait for a keypress first
+	CMP #27
+	BNE NOBOOT
+	JMP $E477
 
-	LDA #TCMD
+NOBOOT	LDA #TCMD
 	STA $302
 	LDA #<TBYT
 	STA DBYTLO
@@ -186,6 +190,12 @@ DOTEST
 	STA DBUFLO
 	LDA #>BUF
 	STA DBUFHI
+
+.if .def SCREENOFF
+	LDA #0
+	STA 559
+	STA $D400
+.endif
 
 TLOOP0	
 	LDA #4
@@ -257,7 +267,9 @@ TLOOP1	LDA DAUX2
 	BNE TLOOP
 	BEQ TLOOP0
 
-TEND	
+TEND	LDA #$22
+	STA 559
+
 .if .def DIAGTX
 	LDA TSTAMP
 	JSR PHEX
@@ -279,7 +291,8 @@ TEND
 	JSR PUTCHR
 .endif
 
-TEND2	JMP TEND2
+TEND2	JSR GETKEY
+	JMP RUN
 
 XRTS	RTS
 
@@ -335,6 +348,9 @@ MTXT	.BYTE 125
 	.BYTE "basic test mode",155
 .endif
 .if SHIPDIAG = 2
+	.BYTE "basic test mode, ANTIC DMA off",155
+.endif
+.if SHIPDIAG = 3
 	.BYTE "extended test mode",155
 .endif
 .else
@@ -343,7 +359,7 @@ MTXT	.BYTE 125
 	.BYTE 155,"insert "
 MDENS	.BYTE "SD disk into D"
 MDRIV	.BYTE "0: and",155
-	.BYTE "press any key to start",155,155
+	.BYTE "press any key, ESC=reboot",155,155
 
 MLEN	= * - MTXT
 
