@@ -247,8 +247,9 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-n] original.rom new.rom\n");
+	printf("usage: patchrom [-i] [-n] original.rom new.rom\n");
 	printf("options:\n");
+	printf("  -i  patch NMI for higher maximum speed\n");
 	printf("  -n  don't patch keyboard IRQ handler\n");
 	return 1;
 }

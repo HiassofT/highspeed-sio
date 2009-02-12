@@ -13,6 +13,8 @@ mkdir -p dist/tmp/src
 cp Makefile *.src *.inc *.cpp *.h hipatch-code-rom*.bin dist/tmp/src
 cp README.txt LICENSE hipatch.atr patchrom.exe hisio*.com dumpos.com dist/tmp
 
+cp test/diag.atr test/diag-ext.atr dist/tmp
+
 cd dist/tmp
 zip -r ../$NAME.zip *
 cd ..

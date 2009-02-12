@@ -1,9 +1,10 @@
-all: hipatch.atr patchrom patchrom.exe
+#all: hipatch.atr patchrom patchrom.exe
 
-#all: hipatch.atr diag.atr patchrom patchrom.exe
+all: hipatch.atr diag.atr diag-ext.atr patchrom patchrom.exe
 
 ATASM=atasm
 ATASMFLAGS=
+#ATASMFLAGS=-s
 #ATASMFLAGS=-s -v
 
 CFLAGS = -W -Wall -g
@@ -61,8 +62,14 @@ hisiorni.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
 hisio-reloc.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -ohisio-reloc.bin -dRELOCTABLE=1 -dSTART=4096 hisio.src
 
-diag.atr: diag.src $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src
+diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag-hias.atr diag.src
+
+diag.atr: diag.src $(HISIOSRC) fastnmi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag.atr -dSHIPDIAG=1 diag.src
+
+diag-ext.atr: diag.src $(HISIOSRC) fastnmi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag-ext.atr -dSHIPDIAG=2 diag.src
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src

@@ -36,6 +36,6 @@
 #define NMIHAN 0xC018
 
 /* address of new NMI code */
-#define PNMI 0xCF40
+#define PNMI 0xCF48
 
 

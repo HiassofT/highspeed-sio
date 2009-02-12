@@ -1,6 +1,6 @@
-Highspeed SIO patch V1.12 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.14 for Atari XL/XE OS and MyIDE OS
 
-Copyright (c) 2006-2008 Matthias Reichl <hias@horus.com> and ABBUC
+Copyright (c) 2006-2009 Matthias Reichl <hias@horus.com> and ABBUC
 
 This program is proteced under the terms of the GNU General Public
 License, version 2. Please read LICENSE for further details.
@@ -42,6 +42,10 @@ and SpartaDos).
 The files "HISIO.COM", "HISION.COM", "HISIOR.COM", "HISIORN.COM"
 and "DUMPOS.COM" can be found in the ZIP as separate files and also
 in the included "hipatch.atr".
+
+The "HISIO*.COM" files ending with an "I" include a special patch
+that uses a shorter NMI handler (it disables atract mode when doing
+SIO). With this patch the Atari is able to go up to 110kbit/sec.
 
 To patch the currently active OS, either use "HISIO.COM" or
 "HISION.COM". The difference between these two is that the

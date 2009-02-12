@@ -1,18 +1,25 @@
 ;  Highspeed SIO diagnostics: test for overrun
 ;
 
-DIAGSIO = 1
+DIAGSIO	= 1
+
+SPEED	= 0
+
+INSANE	= 1
 
 	.include "cio.inc"
 	.include "hisio.inc"
 
 START	= $2000
+BUF	= $3000
 
 DRIVENO	= 2
 
 BCOUNT	= $E0
 FCOUNT	= $E2
 OCOUNT	= $E4
+
+TMPVEC  = $E6
 
 	* = START-16
 
@@ -43,7 +50,22 @@ OCOUNT	= $E4
 	STA 3
 
 
-RUN	LDA #1
+RUN	
+.if .def INSANE
+	JSR ROMRAM
+	LDA #0
+	STA $D40E
+
+	LDA #<FASTNMI
+	STA $FFFA
+	LDA #>FASTNMI
+	STA $FFFB
+
+	LDA #$40
+	STA $D40E
+.endif
+
+	LDA #SPEED
 	STA MYSPEED
 
 ; set SIO parameters for D2:
@@ -99,7 +121,7 @@ TESTLP	LDA #TCMD
 	STA OCOUNT+1
 	STA FCOUNT
 	STA FCOUNT+1
-	STA $D40E
+;	STA $D40E
 ;	STA 559
 ;	STA $D400
 	STA 20
@@ -265,9 +287,13 @@ GETKEY  LDA $E425
 
 XRTS	RTS
 
-SIOSPEED	.BYTE 40
+.if .def INSANE
+	.include "romram.src"
+	.include "fastnmi.src"
+.endif
 
-BUF	= $4000
+
+SIOSPEED	.BYTE 40
 
 	.IF (*&127)<>0
 	.DC (128-(*&127)) 0

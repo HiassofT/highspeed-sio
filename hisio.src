@@ -69,6 +69,9 @@
 ;      a few cycles
 ;    - added optional NMI patch to increase maximum speed
 ;      up to 110kbit/sec (pokey divisor 1)
+;
+;  02/12/2009 Matthias Reichl
+;    - fix endless loop if device sends a speed byte of 0
 
 	.include "hisio.inc"
 

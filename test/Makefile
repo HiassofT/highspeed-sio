@@ -1,16 +1,22 @@
-all: diag.atr diagt.atr commands.atr testov.atr
+all: diag.atr diagt.atr diag-ext.atr diag-hias.atr commands.atr testov.atr
 
 ATASM=atasm
-#ATASMFLAGS=
-ATASMFLAGS=-s -I..
+ATASMFLAGS=-I..
+#ATASMFLAGS=-s -I..
 
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
 
 HISIOSRC=../hisio.src ../hisiocode.src ../hisiodet.src ../hisio.inc
 
-diag.atr: diag.src $(HISIOSRC) fastvbi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag.atr diag.src
+diag-hias.atr: ../diag.src $(HISIOSRC) fastvbi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag-hias.atr ../diag.src
+
+diag.atr: ../diag.src $(HISIOSRC) fastvbi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag.atr -dSHIPDIAG=1 ../diag.src
+
+diag-ext.atr: ../diag.src $(HISIOSRC) fastvbi.src
+	$(ATASM) $(ATASMFLAGS) -r -odiag-ext.atr -dSHIPDIAG=2 ../diag.src
 
 diagt.atr: diagt.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -odiagt.atr diagt.src

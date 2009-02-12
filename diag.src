@@ -1,12 +1,88 @@
 ;  Highspeed SIO diagnostics
 ;
 
+.if .not .def SHIPDIAG
+
+; ------------------------------------------------------------
+; begin: my own testing parameters
+
+; disable retries and fallback to standard speed
+; (even in non-diag mode)
+DIAGNORET = 1
+
+; DIAGSIO = 1
+
+; diag timing (in highspeed code)
+; DIAGTIM	= 1
+
+; diag timing (out of highspeed code)
+DIAGTX = 1
+
+; diag specific timing problems
+; DIAGTP = 1
+
+; initial clock values
+CLK1 = $FF
+CLK2 = $FF
+CLK3 = $FF
+; lcount value
+LCNT = $40
+
+DRIVENO = 2
+
+TCMD	= 'R
+TDIR	= $40
+
+;TCMD	= 'P
+;TDIR	= $80
+
+;TBYT	= $80
+TBYT	= $100
+
+; end: my own testing parameters
+; ------------------------------------------------------------
+
+.else
+
+; default testing parameters, included for testing in dist
+
+DRIVENO = 2
+
+TCMD	= 'R
+TDIR	= $40
+
+;TCMD	= 'P
+;TDIR	= $80
+
+;TBYT	= $80
+TBYT	= $100
+
+.if SHIPDIAG=1
+; do timing tests with unmodified SIO code
+DIAGNORET = 1
+DIAGTX = 1
+.endif
+
+.if SHIPDIAG=2
+; test with all diags in SIO code
 DIAGSIO = 1
+DIAGTIM	= 1
+.endif
+
+.endif
+
+; patch OS for insane speeds
+
+INSANE	= 1
 
 	.include "cio.inc"
 	.include "hisio.inc"
 
 START	= $2000
+BUF	= $3000
+
+TMPVEC	= $E0
+
 
 	* = START-16
 
@@ -37,31 +113,67 @@ START	= $2000
 	STA 3
 
 
-RUN	LDA #0
+RUN	
+; reboot if select is pressed
+	LDA 53279
+	CMP #5
+	BNE RUN2
+	JMP $E477
+
+RUN2	LDA #0
 	STA $301
 	JSR HISIO ; clear speed table
+
+.if .def INSANE
+	JSR ROMRAM
+	LDA #0
+	STA $D40E
+
+.if 0
+	LDA #<FASTVBI
+	STA $222
+	LDA #>FASTVBI
+	STA $223
+.else
+
+	LDA #<FASTNMI
+	STA $FFFA
+	LDA #>FASTNMI
+	STA $FFFB
+.endif
+
+	LDA #$40
+	STA $D40E
+.endif
+
 
 ; set SIO parameters for D2:
 
 	LDA #$31
 	STA $300
-	LDA #2
+	LDA #DRIVENO
 	STA $301
 	LDA #7
 	STA $306
 
 ; read sectors 4-720 in a loop forever
 
-TCMD	= 'R
-TDIR	= $40
+DOTEST
+; print menu screen
+; drive number
+	LDA #DRIVENO+$30
+	STA MDRIV
+;density
+.if TBYT = $80
+	LDA #'S
+.else
+	LDA #'D
+.endif
+	STA MDENS
 
-;TCMD	= 'P
-;TDIR	= $80
+	BPUT 0, MLEN, MTXT
 
-TBYT	= $80
-;TBYT	= $100
-
-DOTEST	JSR GETKEY	; wait for a keypress first
+	JSR GETKEY	; wait for a keypress first
 
 	LDA #TCMD
 	STA $302
@@ -75,7 +187,8 @@ DOTEST	JSR GETKEY	; wait for a keypress first
 	LDA #>BUF
 	STA DBUFHI
 
-TLOOP0	LDA #4
+TLOOP0	
+	LDA #4
 	STA DAUX1
 	LDA #0
 	STA DAUX2
@@ -86,10 +199,50 @@ TLOOP	LDA 53279
 
 	LDA #TDIR
 	STA $303
+
 ;	JSR $E459
+
+.if .def DIAGTP
+	LDA #0
+	STA $D40E
+
+	LDA #CLK3
+	STA 20
+	LDA #CLK2
+	STA 19
+	LDA #CLK1
+	STA 18
+
+; now wait for the right screen line
+?WTLC	LDA $D40B
+	CMP #LCNT
+	BNE ?WTLC
+
+	LDA #$40
+	STA $D40E
+.endif
+
+.if .def DIAGTX
+; record current timestamp
+        LDA #0
+        STA $D40E
+        LDA 18
+        STA TSTAMP
+        LDA 19
+        STA TSTAMP+1
+        LDA 20
+        STA TSTAMP+2
+        LDA $D40B
+        STA TSTAMP+3
+        LDA #$40
+        STA $D40E
+.endif
+
 	JSR HISIO
 
+.if .def DIAGSIO
 	JSR PDIAG
+.endif
 	LDA $303
 	BMI TEND
 
@@ -104,9 +257,63 @@ TLOOP1	LDA DAUX2
 	BNE TLOOP
 	BEQ TLOOP0
 
-TEND	JMP TEND
+TEND	
+.if .def DIAGTX
+	LDA TSTAMP
+	JSR PHEX
+	LDA TSTAMP+1
+	JSR PHEX
+	LDA TSTAMP+2
+	JSR PHEX
+	LDA #'.
+	JSR PUTCHR
+	LDA TSTAMP+3
+	JSR PHEX
+	LDA #':
+	JSR PUTCHR
+	LDA #32
+	JSR PUTCHR
+	LDA $303
+	JSR PHEX
+	LDA #155
+	JSR PUTCHR
+.endif
+
+TEND2	JMP TEND2
 
 XRTS	RTS
+
+.if .def DIAGTX
+PHEX	PHA
+        LSR
+        LSR
+        LSR
+        LSR
+        TAX
+        LDA HEXTAB,X
+        JSR PUTCHR
+        PLA
+        AND #$0F
+        TAX
+        LDA HEXTAB,X
+
+PUTCHR	TAY
+        LDA $E407
+        PHA
+        LDA $E406
+        PHA
+        TYA
+        RTS
+
+HEXTAB .BYTE "0123456789ABCDEF"
+
+TSTAMP	.DC 4 0
+.endif
+
+.if .def INSANE
+	.include "romram.src"
+	.include "fastnmi.src"
+.endif
 
 	.include "hisiodet.src"
 	.include "hisiocode.src"
@@ -121,7 +328,24 @@ GETKEY  LDA $E425
 	PHA
 	RTS
 
-BUF	= *
+MTXT	.BYTE 125
+	.BYTE "highspeed SIO test 2009-02-12",155
+.if .def SHIPDIAG
+.if SHIPDIAG = 1
+	.BYTE "basic test mode",155
+.endif
+.if SHIPDIAG = 2
+	.BYTE "extended test mode",155
+.endif
+.else
+	.BYTE "custom debug mode",155
+.endif
+	.BYTE 155,"insert "
+MDENS	.BYTE "SD disk into D"
+MDRIV	.BYTE "0: and",155
+	.BYTE "press any key to start",155,155
+
+MLEN	= * - MTXT
 
 	.IF (*&127)<>0
 	.DC (128-(*&127)) 0

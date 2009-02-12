@@ -20,9 +20,30 @@
 DOHISIO	
 
 .if .def DIAGSIO
+
+.if .def DIAGTIM
+; record current timestamp
+        LDA #0
+        STA $D40E
+        LDA 18
+        STA ?TSTAMP
+        LDA 19
+        STA ?TSTAMP+1
+        LDA 20
+        STA ?TSTAMP+2
+        LDA $D40B
+        STA ?TSTAMP+3
+	LDA #$40
+	STA $D40E
+.endif
+
+	LDA #$01
+.else
+.if .def DIAGNORET
 	LDA #$01
 .else
 	LDA #$02
+.endif
 .endif
 
 ; internal entry point for highspeed SIO detection:
@@ -440,6 +461,7 @@ DOHIDET	STA DRETRY
 ?GETBY1	BIT IRQST
 	BPL ?ERRBRK	; break key pressed?
 	BNE ?GETBY1
+	LDX SERIN
 	LDA #RMRECV	; reset data-receive IRQ bit
 	STA IRQEN
 	LDA #MSKRECV	; enable data-receive IRQ
@@ -449,7 +471,7 @@ DOHIDET	STA DRETRY
 	BPL ?ERRFRM	; framing error
 	AND #$20
 	BEQ ?ERROVR	; data input overrun
-	LDA SERIN
+	TXA
 	RTS 
 
 ; send a byte. Note. we don't check for the break key
@@ -483,10 +505,15 @@ DOHIDET	STA DRETRY
 ?DIAGST	.BYTE 0
 ?DIAGER	.BYTE 0
 
-PDIAG	LDA ?DIAGER
-	BEQ ?PDIAG0
+.if .def DIAGTIM
+?TSTAMP	.DC 4 0
+.endif
 
-	LDA #0
+PDIAG	LDA ?DIAGER
+	BNE ?PDIAG0
+	RTS
+
+?PDIAG0	LDA #0
 	STA ?DIAGBT
 ?PDIAG1	LDX ?DIAGBT
 	CPX #$0C
@@ -500,11 +527,29 @@ PDIAG	LDA ?DIAGER
 ?PDIAG2	LDA #155
 	JSR ?PUTCHR
 
+.if .def DIAGTIM
+; print timestamp
+	LDA ?TSTAMP
+	JSR ?PHEX
+	LDA ?TSTAMP+1
+	JSR ?PHEX
+	LDA ?TSTAMP+2
+	JSR ?PHEX
+	LDA #'.
+	JSR ?PUTCHR
+	LDA ?TSTAMP+3
+	JSR ?PHEX
+	LDA #':
+	JSR ?PUTCHR
+	LDA #32
+	JSR ?PUTCHR
+.endif
+
 	LDA #0
 	STA ?DIAGBT
 ?PDIAG3	LDX ?DIAGBT
 	CPX ?DIAGER
-	BEQ ?PDIAG0
+	BEQ ?PDIAG4
 	LDA ?DIAGS,X
 	JSR ?PHEX
 	LDA #$20
@@ -522,7 +567,7 @@ PDIAG	LDA ?DIAGER
 	INC ?DIAGBT
 	BNE ?PDIAG3
 
-?PDIAG0	RTS
+?PDIAG4	RTS
 
 ?PHEX	PHA
 	LSR

@@ -52,6 +52,6 @@ KEYIRQ  = $FC20 	; this contains "LDA $D209"
 KEYIRQ2 = $FC23 	; next instruction of IRQ handler
 .endif
 
-PNMI = $CF40
+PNMI = $CF48		; new NMI handler
 
 PVER = $CFF0		; 16 bytes version string
