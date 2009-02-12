@@ -126,6 +126,8 @@ RUN	LDA #0
 	JSR HISIO ; clear speed table
 
 .if .def INSANE
+	LDA $D301
+	STA D301BAK
 	JSR ROMRAM
 	LDA #0
 	STA $D40E
@@ -292,7 +294,13 @@ TEND	LDA #$22
 .endif
 
 TEND2	JSR GETKEY
+
+.if .def INSANE
+	LDA D301BAK
+	STA $D301
+.endif
 	JMP RUN
+
 
 XRTS	RTS
 
@@ -334,6 +342,10 @@ TSTAMP	.DC 4 0
 HIBUF   .DC 4 0
 SIOSPEED        .BYTE 0
 SPEEDTB .DC 8 0
+
+.if .def INSANE
+D301BAK	.BYTE 0
+.endif
 
 GETKEY  LDA $E425
 	PHA
