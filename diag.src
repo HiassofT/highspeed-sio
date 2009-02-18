@@ -1,6 +1,8 @@
 ;  Highspeed SIO diagnostics
 ;
 
+NOKEY=1
+
 .if .not .def SHIPDIAG
 
 ; ------------------------------------------------------------
@@ -176,10 +178,12 @@ DOTEST
 
 	BPUT 0, MLEN, MTXT
 
+.if .not .def NOKEY
 	JSR GETKEY	; wait for a keypress first
 	CMP #27
 	BNE NOBOOT
 	JMP $E477
+.endif
 
 NOBOOT	LDA #TCMD
 	STA $302
@@ -295,6 +299,12 @@ TEND	LDA #$22
 
 TEND2	JSR GETKEY
 
+	CMP #27
+	BNE NOBOOT2
+	JMP $E477
+
+NOBOOT2
+
 .if .def INSANE
 	LDA D301BAK
 	STA $D301
@@ -354,7 +364,7 @@ GETKEY  LDA $E425
 	RTS
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2009-02-12",155
+	.BYTE "highspeed SIO test 2009-02-18",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
 	.BYTE "basic test mode",155
@@ -368,10 +378,18 @@ MTXT	.BYTE 125
 .else
 	.BYTE "custom debug mode",155
 .endif
+.if .def NOKEY
+	.BYTE 155, "testing "
+MDENS	.BYTE "SD disk in D"
+MDRIV	.BYTE "0:"
+
+.else
 	.BYTE 155,"insert "
 MDENS	.BYTE "SD disk into D"
 MDRIV	.BYTE "0: and",155
-	.BYTE "press any key, ESC=reboot",155,155
+	.BYTE "press any key, ESC=reboot"
+.endif
+	.BYTE 155,155
 
 MLEN	= * - MTXT
 
