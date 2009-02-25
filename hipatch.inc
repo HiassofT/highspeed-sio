@@ -49,7 +49,6 @@ PSIO = $CC20		; start of new highspeed code
 PKEY = $CFA0		; new keyboard IRQ handler
 
 KEYIRQ  = $FC20 	; this contains "LDA $D209"
-KEYIRQ2 = $FC23 	; next instruction of IRQ handler
 .endif
 
 PNMI = $CF48		; new NMI handler

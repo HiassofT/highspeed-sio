@@ -212,7 +212,7 @@ MYCODE	NOP
 XLKEY	LDA $D209
 
 ; patched contents of keyboard IRQ handler
-MYKEY	JMP PKEY
+MYKEY	JSR PKEY
 .endif
 
 .if .def ROMABLE

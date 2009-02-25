@@ -85,9 +85,9 @@ PKEY4	CMP #$E3	; shift-control-N = normal speed SIO
 	STA HIENAB
 	
 PKEYX	PLA
-	JMP KEYIRQ2
+	RTS
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.14 090212"
+	.BYTE "Hias 1.14 090225"
 

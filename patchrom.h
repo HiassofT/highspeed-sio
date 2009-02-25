@@ -20,11 +20,15 @@
 /* entry point for new highspeed SIO code */
 #define HISIO 0xCC20
 
-/* address of SIO code in ROM */
-#define XLSIO 0xE971
+/* address of SIO code in XL ROM */
+#define XL_SIO 0xE971
+
+/* address of SIO code in old OS ROM */
+#define OLD_SIO 0xE959
 
 /* address of keyboard IRQ handler containing "LDA $D209" */
-#define KEYIRQ 0xFC20
+#define XL_KEYIRQ 0xFC20
+#define OLD_KEYIRQ 0xFFBE
 
 /* address of new, patched IRQ code */
 #define PKEYIRQ 0xCFA0
@@ -33,7 +37,7 @@
 #define NMIVEC 0xFFFA
 
 /* address of original NMI handler */
-#define NMIHAN 0xC018
+#define XL_NMIHAN 0xC018
 
 /* address of new NMI code */
 #define PNMI 0xCF48

@@ -43,10 +43,15 @@ static unsigned char newcode[newcode_len] = {
 	HISIO >> 8 };
 
 #define oldcode_len 3
-static unsigned char oldcode[oldcode_len] = {
+static unsigned char xl_oldcode[oldcode_len] = {
 	0x4c, // JMP
-	(XLSIO+4) & 0xff,
-	(XLSIO+4) >> 8 };
+	(XL_SIO+4) & 0xff,
+	(XL_SIO+4) >> 8 };
+
+static unsigned char old_oldcode[oldcode_len] = {
+	0x4c, // JMP
+	(OLD_SIO+4) & 0xff,
+	(OLD_SIO+4) >> 8 };
 
 #define keycode_len 3
 static unsigned char orig_keycode[keycode_len] = {
@@ -55,14 +60,14 @@ static unsigned char orig_keycode[keycode_len] = {
 	0xd2};
 
 static unsigned char new_keycode[keycode_len] = {
-	0x4c, // JMP
+	0x20, // JSR
 	PKEYIRQ & 0xff,
 	PKEYIRQ >> 8 };
 
 #define nmivec_len 2
 static unsigned char orig_nmivec[nmivec_len] = {
-	NMIHAN & 0xff,
-	NMIHAN >> 8 };
+	XL_NMIHAN & 0xff,
+	XL_NMIHAN >> 8 };
 
 static unsigned char new_nmivec[nmivec_len] = {
 	PNMI & 0xff,
@@ -96,14 +101,16 @@ static unsigned int get_csum2()
 }
 
 /* check if the ROM checksums are OK */
-static bool rom_checksums_ok()
+static bool rom_checksums_ok(bool is_xl)
 {
 	unsigned int csum;
 
-	csum = get_csum1();
-	if (rombuf[CSUM1_ADR - ROMBASE] != (csum & 0xff) ||
-	    rombuf[CSUM1_ADR +1 - ROMBASE] != (csum >> 8)) {
-	       return false;
+	if (is_xl) {
+		csum = get_csum1();
+		if (rombuf[CSUM1_ADR - ROMBASE] != (csum & 0xff) ||
+		    rombuf[CSUM1_ADR +1 - ROMBASE] != (csum >> 8)) {
+		       return false;
+		}
 	}
 
 	csum = get_csum2();
@@ -114,13 +121,15 @@ static bool rom_checksums_ok()
 	return true;
 }
 
-static void update_rom_checksums()
+static void update_rom_checksums(bool is_xl)
 {
 	unsigned int csum;
 
-	csum = get_csum1();
-	rombuf[CSUM1_ADR - ROMBASE] = csum & 0xff;
-	rombuf[CSUM1_ADR +1 - ROMBASE] = csum >> 8;
+	if (is_xl) {
+		csum = get_csum1();
+		rombuf[CSUM1_ADR - ROMBASE] = csum & 0xff;
+		rombuf[CSUM1_ADR +1 - ROMBASE] = csum >> 8;
+	}
 
 	csum = get_csum2();
 	rombuf[CSUM2_ADR - ROMBASE] = csum & 0xff;
@@ -129,7 +138,8 @@ static void update_rom_checksums()
 
 static bool check_already_patched()
 {
-	return memcmp(newcode, rombuf + XLSIO - ROMBASE, newcode_len) == 0;
+	return (memcmp(newcode, rombuf + XL_SIO - ROMBASE, newcode_len) == 0)
+	       || (memcmp(newcode, rombuf + OLD_SIO - ROMBASE, newcode_len) == 0);
 }
 
 int main(int argc, char** argv)
@@ -140,6 +150,13 @@ int main(int argc, char** argv)
 
 	bool patch_keyirq = true;
 	bool patch_nmi = false;
+
+	unsigned int sio_address;
+	unsigned int key_address;
+
+	unsigned char* old_siocode;
+	bool is_xl = true;
+
 	int idx = 1;
 
 	printf("patchrom V1.14 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
@@ -181,11 +198,23 @@ int main(int argc, char** argv)
 		printf("%s is already patched\n", origfile);
 		return 1;
 	}
-	if (memcmp(rombuf + XLSIO - ROMBASE, origcode, origcode_len)) {
-		printf("incompatible OS\n");
-		return 1;
+	if (memcmp(rombuf + XL_SIO - ROMBASE, origcode, origcode_len) == 0) {
+		is_xl = true;
+		sio_address = XL_SIO;
+		old_siocode = xl_oldcode;
+		key_address = XL_KEYIRQ;
+	} else {
+		if (memcmp(rombuf + OLD_SIO - ROMBASE, origcode, origcode_len) == 0) {
+			is_xl = false;
+			sio_address = OLD_SIO;
+			old_siocode = old_oldcode;
+			key_address = OLD_KEYIRQ;
+		} else {
+			printf("incompatible OS\n");
+			return 1;
+		}
 	}
-	need_csum_update = rom_checksums_ok();
+	need_csum_update = rom_checksums_ok(is_xl);
 
 	// copy highspeed SIO code to ROM OS
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
@@ -196,18 +225,18 @@ int main(int argc, char** argv)
 	}
 
 	// copy old standard SIO code to highspeed SIO code
-	memcpy(rombuf + HISTDSIO - ROMBASE, rombuf + XLSIO - ROMBASE, newcode_len);
+	memcpy(rombuf + HISTDSIO - ROMBASE, rombuf + sio_address - ROMBASE, newcode_len);
 
 	// add "jump to old code + 4"
-	memcpy(rombuf + HISTDSIO + newcode_len - ROMBASE, oldcode, oldcode_len);
+	memcpy(rombuf + HISTDSIO + newcode_len - ROMBASE, old_siocode, oldcode_len);
 
 	// change old SIO code
-	memcpy(rombuf + XLSIO - ROMBASE, newcode, newcode_len);
+	memcpy(rombuf + sio_address - ROMBASE, newcode, newcode_len);
 
 	// patch keyboard IRQ handler
 	if (patch_keyirq) {
-		if (memcmp(rombuf + KEYIRQ -  ROMBASE, orig_keycode, keycode_len) == 0) {
-			memcpy(rombuf + KEYIRQ -  ROMBASE, new_keycode, keycode_len);
+		if (memcmp(rombuf + key_address -  ROMBASE, orig_keycode, keycode_len) == 0) {
+			memcpy(rombuf + key_address -  ROMBASE, new_keycode, keycode_len);
 			printf("patched keyboard IRQ handler\n");
 		} else {
 			printf("unknown OS, not patching keyboard IRQ handler\n");
@@ -216,18 +245,22 @@ int main(int argc, char** argv)
 
 	// patch NMI handler
 	if (patch_nmi) {
-		if (memcmp(rombuf + NMIVEC -  ROMBASE, orig_nmivec, nmivec_len) == 0) {
-			memcpy(rombuf + NMIVEC -  ROMBASE, new_nmivec, nmivec_len);
-			printf("patched NMI handler\n");
+		if (is_xl) {
+			if (memcmp(rombuf + NMIVEC -  ROMBASE, orig_nmivec, nmivec_len) == 0) {
+				memcpy(rombuf + NMIVEC -  ROMBASE, new_nmivec, nmivec_len);
+				printf("patched NMI handler\n");
+			} else {
+				printf("unknown OS, not patching NMI handler\n");
+			}
 		} else {
-			printf("unknown OS, not patching NMI handler\n");
+			printf("detected old OS, not patching NMI handler\n");
 		}
 	}
 
 	if (need_csum_update) {
 		//printf("updating ROM checksums\n");
-		update_rom_checksums();
-		if (!rom_checksums_ok()) {
+		update_rom_checksums(is_xl);
+		if (!rom_checksums_ok(is_xl)) {
 			printf("internal error - updating ROM checksums failed!\n");
 			return 1;
 		}
