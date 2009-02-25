@@ -1,0 +1,73 @@
+;  Highspeed SIO test: send a byte
+;
+
+DIAGSIO = 1
+
+DEFSPEED	= $28
+DEFBYTE	= $55
+
+SPEED	= $E0
+BYTE	= $E1
+
+	.include "cio.inc"
+	.include "hisio.inc"
+
+START	= $2000
+BUF	= $3000
+
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+
+	LDA #DEFSPEED
+	STA SPEED
+	LDA #DEFBYTE
+	STA BYTE
+       
+LOOP	JSR GETKEY
+
+	LDA #SKSEND
+	STA SKCTL
+	STA SKREST
+	LDA #$28
+	STA AUDCTL
+	LDA #$A0
+	STA AUDC4
+	LDA SPEED
+	STA AUDF3
+	LDA #0
+	STA AUDF4
+
+	LDA BYTE
+	STA SEROUT
+	JMP LOOP
+
+GETKEY  LDA $E425
+        PHA
+        LDA $E424
+        PHA
+        RTS
+
+XRTS	RTS
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *
