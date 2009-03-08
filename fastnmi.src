@@ -18,14 +18,16 @@
 ;
 
 
-FASTNMI	CLD
+FASTNMI BIT $D40F
+	BPL ?NODLI
+
+	JMP ($200)
+
+?NODLI	STA $D40F
+
 	PHA
 	LDA CRITIC
 	BEQ ?NOCRIT
-
-	LDA $D40F
-	STA $D40F
-	BMI ?IGNDLI
 
 	INC 20
 	BNE ?NOC1
@@ -33,19 +35,22 @@ FASTNMI	CLD
 	BNE ?NOC1
 	INC 18
 
-?NOC1	LDA CDTMV1
-	BNE ?NOTI11
-	LDA CDTMV1+1
-	BEQ ?NOTI12
+?NOC1	LDA CDTMV1	; check lo byte. if its != 0 timer is running and it must be decremented.
+	BNE ?TIDEC	; go decrement, hi byte unchanged because lo != 0
+	LDA CDTMV1+1	; this branch: lo = 0
+	BEQ ?TIEXIT	; timer is zero (disabled, expired), exit from here
 	DEC CDTMV1+1
-?NOTI11	DEC CDTMV1
-	BNE ?NOTI12
-	LDA CDTMV1+1
-	BEQ ?RUNT1
-?NOTI12 PLA
+?TIDEC	DEC CDTMV1
+	BEQ ?TICHK	; lo reached 0, check if we hi also reached 0
+?TIEXIT	PLA		; timer still running or expired
+	RTI
+?TICHK	LDA CDTMV1+1
+	BEQ ?RUNT1	; hi is also 0, execute timer vector
+	PLA		; timer still running
 	RTI
 
-?RUNT1	TXA
+?RUNT1	CLD
+	TXA
 	PHA
 	TYA
 	PHA
@@ -57,12 +62,8 @@ FASTNMI	CLD
 ?IGNDLI	PLA
 	RTI
 
-?NOCRIT	BIT $D40F
-	BPL ?NODLI
-	PLA
-	JMP ($200)
-
-?NODLI	TXA
+?NOCRIT	CLD
+	TXA
 	PHA
 	TYA
 	PHA
