@@ -36,6 +36,10 @@
 	MYSPEED = $3A
 	STACKP = $3B
 
+; flag if GETBYTE should return after receiving a single byte
+; 0 means no (we are in read loop), $80 means yes
+	GETFLG = $3C
+
 ;	CRETRY = $29C
 ;	DRETRY = $2BD
 ;	STACKP = $318

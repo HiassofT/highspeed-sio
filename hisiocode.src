@@ -291,39 +291,6 @@ DOHIDET	STA DRETRY
 	BNE ?WTSND
 	RTS
 
-?GETBLK	LDY #$00
-	STY CHKSUM
-
-; note: pokey is already set to receive mode (in rdquit),
-; so we don't need to do the setup again
-
-?ABS63
-?GETLP	JSR ?GETBYTE
-	STA (BUFRLO),Y
-;?ABS64	JSR ?ADDSUM
-
-	CLC
-	ADC CHKSUM
-	ADC #$00
-	STA CHKSUM
-
-	INY 
-	BNE ?GET1
-	INC BUFRHI
-	DEC BFENHI
-?GET1	CPY BFENLO
-	BNE ?GETLP
-	LDA BFENHI
-	BNE ?GETLP
-?ABS65	JSR ?GETBYTE
-
-.if .def DIAGSIO
-	STA ?DIAGBT
-.endif
-	CMP CHKSUM
-	BNE ?ERRCHK
-	RTS 
-
 ; cleanup, in case of error or end of transmission
 
 ?CLEANUP LDA #$A0	; reset pokey
@@ -392,6 +359,8 @@ DOHIDET	STA DRETRY
 	STA SKREST
 	LDA #$3C	; clear command line
 	STA PBCTL
+	LDA #$80
+	STA GETFLG
 ?ABS72	JSR ?GETBYTE
 
 .if .def DIAGSIO
@@ -412,9 +381,6 @@ DOHIDET	STA DRETRY
 
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 ?ERROVR	LDA #ERROVR	; data input overrun
-
-	.BYTE $2C	; BIT xxx (skip next 2 bytes)
-?ERRCHK	LDA #ERRCHK	; checksum error
 
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
 ?ERRTO	LDA #ERRTO	; timeout error
@@ -461,6 +427,17 @@ DOHIDET	STA DRETRY
 
 ; read a byte
 
+?GETBLK	LDY #$00
+	STY CHKSUM
+	STY GETFLG
+
+; note: pokey is already set to receive mode (in rdquit),
+; so we don't need to do the setup again
+
+?ABS63
+?GETLP	
+;	JSR ?GETBYTE
+
 ?GETBYTE LDA #IMRECV
 ?GETBY1	BIT IRQST
 	BPL ?ERRBRK	; break key pressed?
@@ -476,7 +453,39 @@ DOHIDET	STA DRETRY
 	AND #$20
 	BEQ ?ERROVR	; data input overrun
 	TXA
-	RTS 
+	BIT GETFLG
+	BMI ?DORTS
+
+	STA (BUFRLO),Y
+;?ABS64	JSR ?ADDSUM
+
+	CLC
+	ADC CHKSUM
+	ADC #$00
+	STA CHKSUM
+
+	INY 
+	BNE ?GET1
+	INC BUFRHI
+	DEC BFENHI
+?GET1	CPY BFENLO
+	BNE ?GETLP
+	LDA BFENHI
+	BNE ?GETLP
+?ABS65	LDA #$80
+	STA GETFLG
+	JSR ?GETBYTE
+
+.if .def DIAGSIO
+	STA ?DIAGBT
+.endif
+	CMP CHKSUM
+	BEQ ?DORTS
+	LDA #ERRCHK
+	JMP ?ERR
+?DORTS	RTS 
+
+
 
 ; send a byte. Note. we don't check for the break key
 ; here since it confuses several drives (eg. speedy 1050)
