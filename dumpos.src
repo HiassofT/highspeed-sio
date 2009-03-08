@@ -60,6 +60,23 @@ WOK1
 	LDA #0
 	STA $D40E
 
+; set $5000-$57FF to $FF, needed for dumping the old OS
+
+	LDA #0
+	STA SRCVEC
+	LDA #$50
+	STA SRCVEC+1
+	LDY #0
+	LDX #8
+	LDA #$FF
+CLRLP	STA (SRCVEC),Y
+	INY
+	BNE CLRLP
+	INC SRCVEC+1
+	DEX
+	BNE CLRLP
+
+; now (try to) enable selftest and copy it to buffer
 	LDA $D301
 	PHA
 	AND #$7f
@@ -135,8 +152,8 @@ COPLP	LDA (SRCVEC),Y
 	BNE COPLP
 	RTS
 
-TTIT	.BYTE 155, "OS dumper V1.01",155
-	.BYTE "(c) 2006-2008 Matthias Reichl",155,155
+TTIT	.BYTE 155, "OS dumper V1.02",155
+	.BYTE "(c) 2006-2009 Matthias Reichl",155,155
 	.BYTE "filename >"
 TTITL	= * -TTIT
 
