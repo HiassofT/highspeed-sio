@@ -1,4 +1,5 @@
-all: diag.atr diagt.atr diag-ext.atr diag-hias.atr commands.atr testov.atr testsend.atr
+all: diag.atr diagt.atr diag-ext.atr diag-hias.atr commands.atr testov.atr testsend.atr \
+	testrec.atr
 
 ATASM=atasm
 ATASMFLAGS=-I..
@@ -29,6 +30,9 @@ testov.atr: testov.src $(HISIOSRC)
 
 testsend.atr: testsend.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -r -otestsend.atr testsend.src
+
+testrec.atr: testrec.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -otestrec.atr testrec.src
 
 
 clean:

@@ -405,28 +405,32 @@ DOHIDET	STA DRETRY
 	CMP #'E		; command ERROR
 	BEQ ?RDERR
 
-?ERRNAK LDY #ERRNAK	; NAK or any other error -> set code $8B
+?ERRNAK LDA #ERRNAK	; NAK or any other error -> set code $8B
 
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
-?ERRFRM	LDY #ERRFRM	; framing error
+?ERRFRM	LDA #ERRFRM	; framing error
 
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
-?ERROVR	LDY #ERROVR	; data input overrun
+?ERROVR	LDA #ERROVR	; data input overrun
 
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
-?ERRCHK	LDY #ERRCHK	; checksum error
+?ERRCHK	LDA #ERRCHK	; checksum error
 
 	.BYTE $2C	; BIT xxx (skip next 2 bytes)
-?ERRTO	LDY #ERRTO	; timeout error
+?ERRTO	LDA #ERRTO	; timeout error
 
-; general error routine, code in Y
+; general error routine, code in A
 
-?ERR	STY STATUS
+?ERR	STA STATUS
 
 .if .def DIAGSIO
+	STX ?DIAGX
 	LDX ?DIAGER
-	TYA
 	STA ?DIAGE,X
+	LDA ?DIAGX
+	STA ?DIAGB2,X
+	TYA
+	STA ?DIAGC,X
 	LDA ?DIAGST
 	STA ?DIAGS,X
 	LDA ?DIAGBT
@@ -438,8 +442,8 @@ DOHIDET	STA DRETRY
 	TXS
 ?ABS73	JMP ?SIOEND	; we got an error, cleanup and try to restart
 
-?RDERR	LDY #ERRDEV	; command error
-	STY STATUS
+?RDERR	LDA #ERRDEV	; command error
+	STA STATUS
 	RTS
 
 ; break handler
@@ -500,8 +504,11 @@ DOHIDET	STA DRETRY
 .if .def DIAGSIO
 ?DIAGS	.DC $20 0
 ?DIAGB	.DC $20 0
+?DIAGB2	.DC $20 0
 ?DIAGE	.DC $20 0
+?DIAGC	.DC $20 0
 ?DIAGBT	.BYTE 0
+?DIAGX	.BYTE 0
 ?DIAGST	.BYTE 0
 ?DIAGER	.BYTE 0
 
@@ -561,6 +568,16 @@ PDIAG	LDA ?DIAGER
 	JSR ?PUTCHR
 	LDX ?DIAGBT
 	LDA ?DIAGB,X
+	JSR ?PHEX
+	LDA #$20
+	JSR ?PUTCHR
+	LDX ?DIAGBT
+	LDA ?DIAGC,X
+	JSR ?PHEX
+	LDA #$20
+	JSR ?PUTCHR
+	LDX ?DIAGBT
+	LDA ?DIAGB2,X
 	JSR ?PHEX
 	LDA #155
 	JSR ?PUTCHR

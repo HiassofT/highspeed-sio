@@ -3,6 +3,9 @@
 
 NOKEY=1
 
+; clear buffer before every SIO call
+CLRBUF=1
+
 .if .not .def SHIPDIAG
 
 ; ------------------------------------------------------------
@@ -10,16 +13,20 @@ NOKEY=1
 
 ; disable retries and fallback to standard speed
 ; (even in non-diag mode)
-DIAGNORET = 1
+; DIAGNORET = 1
 ; SCREENOFF = 1
 
-; DIAGSIO = 1
+DIAGSIO = 1
 
 ; diag timing (in highspeed code)
 ; DIAGTIM	= 1
 
+; NONMI = 1
+
+USEDLI = 1
+
 ; diag timing (out of highspeed code)
-DIAGTX = 1
+;DIAGTX = 1
 
 ; diag specific timing problems
 ; DIAGTP = 1
@@ -79,6 +86,13 @@ DIAGSIO = 1
 DIAGTIM	= 1
 .endif
 
+.if SHIPDIAG=4
+; test with all diags in SIO code, Antic DMA disabled
+DIAGSIO = 1
+DIAGTIM	= 1
+SCREENOFF = 1
+.endif
+
 .endif
 
 ; patch OS for insane speeds
@@ -93,6 +107,13 @@ BUF	= $3000
 
 TMPVEC	= $E0
 
+NMIEN	= $D40E
+
+.if .def USEDLI
+DEFNMI	= $C0
+.else
+DEFNMI	= $40
+.endif
 
 	* = START-16
 
@@ -132,7 +153,7 @@ RUN	LDA #0
 	STA D301BAK
 	JSR ROMRAM
 	LDA #0
-	STA $D40E
+	STA NMIEN
 
 .if 0
 	LDA #<FASTVBI
@@ -147,8 +168,47 @@ RUN	LDA #0
 	STA $FFFB
 .endif
 
-	LDA #$40
-	STA $D40E
+	LDA #DEFNMI
+	STA NMIEN
+.endif
+
+.if .def USEDLI
+	LDA #0
+	STA NMIEN
+	LDA #<DLI
+	STA $200
+	LDA #>DLI
+	STA $201
+	LDA $230
+	STA TMPVEC
+	LDA $231
+	STA TMPVEC+1
+.if 0
+	LDY #2
+	LDA (TMPVEC),Y
+	ORA #$80
+	STA (TMPVEC),Y
+	INY
+	LDA (TMPVEC),Y
+	ORA #$80
+	STA (TMPVEC),Y
+
+	LDY #6
+?DLILP	LDA (TMPVEC),Y
+	ORA #$80
+	STA (TMPVEC),Y
+	INY
+	CPY #28
+	BNE ?DLILP
+.endif
+
+	LDY #10
+	LDA (TMPVEC),Y
+	ORA #$80
+	STA (TMPVEC),Y
+
+	LDA #DEFNMI
+	STA NMIEN
 .endif
 
 
@@ -158,7 +218,7 @@ RUN	LDA #0
 	STA $300
 	LDA #DRIVENO
 	STA $301
-	LDA #7
+	LDA #3
 	STA $306
 
 ; read sectors 4-720 in a loop forever
@@ -216,11 +276,19 @@ TLOOP	LDA 53279
 	LDA #TDIR
 	STA $303
 
+.if .def CLRBUF
+	LDA #0
+	TAY
+CLRLP	STA BUF,Y
+	INY
+	BNE CLRLP
+.endif
+
 ;	JSR $E459
 
 .if .def DIAGTP
 	LDA #0
-	STA $D40E
+	STA NMIEN
 
 	LDA #CLK3
 	STA 20
@@ -234,14 +302,14 @@ TLOOP	LDA 53279
 	CMP #LCNT
 	BNE ?WTLC
 
-	LDA #$40
-	STA $D40E
+	LDA #DEFNMI
+	STA NMIEN
 .endif
 
 .if .def DIAGTX
 ; record current timestamp
         LDA #0
-        STA $D40E
+        STA NMIEN
         LDA 18
         STA TSTAMP
         LDA 19
@@ -250,8 +318,16 @@ TLOOP	LDA 53279
         STA TSTAMP+2
         LDA $D40B
         STA TSTAMP+3
-        LDA #$40
-        STA $D40E
+        LDA #DEFNMI
+        STA NMIEN
+.endif
+
+.if .def NONMI
+	LDA #0
+	STA NMIEN
+.else
+	LDA #DEFNMI
+	STA NMIEN
 .endif
 
 	JSR HISIO
@@ -259,6 +335,10 @@ TLOOP	LDA 53279
 .if .def DIAGSIO
 	JSR PDIAG
 .endif
+	LDA 53279
+	CMP #3
+	BEQ TEND
+
 	LDA $303
 	BMI TEND
 
@@ -275,6 +355,8 @@ TLOOP1	LDA DAUX2
 
 TEND	LDA #$22
 	STA 559
+	LDA #DEFNMI
+	STA NMIEN
 
 .if .def DIAGTX
 	LDA TSTAMP
@@ -362,6 +444,15 @@ GETKEY  LDA $E425
 	LDA $E424
 	PHA
 	RTS
+
+.if .def USEDLI
+DLI	PHA
+	LDA $D40B
+	STA $D40A
+	STA $D01A
+	PLA
+	RTI
+.endif
 
 MTXT	.BYTE 125
 	.BYTE "highspeed SIO test 2009-02-18",155

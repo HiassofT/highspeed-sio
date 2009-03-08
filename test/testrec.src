@@ -1,0 +1,169 @@
+;  Highspeed SIO diagnostics - receive 10 bytes
+;
+
+;SPEED	= $28
+;SPEED	= $1
+SPEED	= $0
+
+	.include "cio.inc"
+	.include "hisio.inc"
+
+START	= $2000
+BUF	= $3000
+
+ERR1	= $3800
+
+TMPVEC	= $E0
+
+COUNT	= 16
+
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+       
+TESTLP	LDA #0
+	STA 559
+	STA $D400
+	STA $D40E
+	SEI
+
+        LDA #SKRECV
+        STA SKCTL
+        STA SKREST
+        LDA #$28
+        STA AUDCTL
+        LDA #$A0
+        STA AUDC4
+        LDA #SPEED
+        STA AUDF3
+        LDA #0
+        STA AUDF4
+        LDA #MSKRECV
+        STA IRQEN
+
+	LDA #0
+	TAY
+CLRLP	STA BUF,Y
+	INY
+	BNE CLRLP
+
+	LDY #0
+RECLP	LDA #IMRECV
+WTREC	BIT IRQST
+        BPL ERRBRK     ; break key pressed?
+        BNE WTREC
+        LDA SERIN
+	STA BUF,Y
+        LDA #RMRECV     ; reset data-receive IRQ bit
+        STA IRQEN
+        LDA #MSKRECV    ; enable data-receive IRQ
+        STA IRQEN
+        LDA SKSTAT
+        STA SKREST
+        BPL ERRFRM     ; framing error
+        AND #$20
+        BEQ ERROVR     ; data input overrun
+	INY
+	CPY #COUNT
+	BNE RECLP
+        LDA #0
+	STA ERR1
+	JMP STOP
+
+ERRBRK	LDA #1
+	STA ERR1
+	JMP STOP
+
+ERRFRM	LDA #2
+	STA ERR1
+	JMP STOP
+
+ERROVR	LDA #3
+	STA ERR1
+	JMP STOP
+
+STOP	CLI
+	LDA #34
+	STA 559
+	LDA #$40
+	STA $D40E
+
+	LDA ERR1
+	CLC
+	ADC #'0
+	JSR PUTCHR
+	LDA #155
+	JSR PUTCHR
+
+	LDA #0
+	STA TMPVEC
+PRLP	LDY TMPVEC
+	LDA BUF,Y
+	JSR PHEX
+	LDA #32
+	JSR PUTCHR
+	INC TMPVEC
+	LDA TMPVEC
+	AND #7
+	BNE NOCR
+	LDA #155
+	JSR PUTCHR
+NOCR	LDA TMPVEC
+	CMP #COUNT
+	BNE PRLP
+
+	JSR GETKEY
+	JMP TESTLP
+
+PHEX    PHA
+        LSR
+        LSR
+        LSR
+        LSR
+        TAX
+        LDA HEXTAB,X
+        JSR PUTCHR
+        PLA
+        AND #$0F
+        TAX
+        LDA HEXTAB,X
+
+PUTCHR	TAY
+        LDA $E407
+        PHA
+        LDA $E406
+        PHA
+        TYA
+        RTS
+
+HEXTAB .BYTE "0123456789ABCDEF"
+
+GETKEY  LDA $E425
+	PHA
+	LDA $E424
+	PHA
+	RTS
+
+XRTS	RTS
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *
