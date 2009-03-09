@@ -13,17 +13,24 @@ CLRBUF=1
 
 ; disable retries and fallback to standard speed
 ; (even in non-diag mode)
-; DIAGNORET = 1
+DIAGNORET = 1
+DIAGTX = 1
 ; SCREENOFF = 1
 
-DIAGSIO = 1
+; DIAGSIO = 1
 
 ; diag timing (in highspeed code)
 ; DIAGTIM	= 1
 
 ; NONMI = 1
 
-USEDLI = 1
+; USEDLI = 1
+
+; use immediate VBI ($222) instead of patching NMI handler
+USEVBI = 1
+
+; don't do checksumming
+; NOCKSUM = 1
 
 ; diag timing (out of highspeed code)
 ;DIAGTX = 1
@@ -95,9 +102,10 @@ SCREENOFF = 1
 
 .endif
 
+.if .not .def USEVBI
 ; patch OS for insane speeds
-
 INSANE	= 1
+.endif
 
 	.include "cio.inc"
 	.include "hisio.inc"
@@ -155,21 +163,20 @@ RUN	LDA #0
 	LDA #0
 	STA NMIEN
 
-.if 0
-	LDA #<FASTVBI
-	STA $222
-	LDA #>FASTVBI
-	STA $223
-.else
-
 	LDA #<FASTNMI
 	STA $FFFA
 	LDA #>FASTNMI
 	STA $FFFB
-.endif
 
 	LDA #DEFNMI
 	STA NMIEN
+.endif
+
+.if .def USEVBI
+	LDY #<FASTVBI
+	LDX #>FASTVBI
+	LDA #6
+	JSR $E45C
 .endif
 
 .if .def USEDLI
@@ -426,6 +433,10 @@ TSTAMP	.DC 4 0
 .if .def INSANE
 	.include "romram.src"
 	.include "fastnmi.src"
+.endif
+
+.if .def USEVBI
+	.include "fastvbi.src"
 .endif
 
 	.include "hisiodet.src"
