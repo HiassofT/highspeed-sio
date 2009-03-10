@@ -59,7 +59,10 @@ hisiorni.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
 
 
 hisio-reloc.bin: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -ohisio-reloc.bin -dRELOCTABLE=1 -dSTART=4096 hisio.src
+	$(ATASM) $(ATASMFLAGS) -o$@ -dRELOCTABLE=1 -dSTART=4096 hisio.src
+
+hisio-reloc-fastvbi.bin: $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -o$@ -dRELOCTABLE=1 -dSTART=4096 -dFASTVBI=1 hisio.src
 
 diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
 	$(ATASM) $(ATASMFLAGS) -r -odiag-hias.atr diag.src

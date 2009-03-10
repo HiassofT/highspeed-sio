@@ -67,12 +67,16 @@ DOHIDET	STA DRETRY
 	LDA $223
 	PHA
 ; install fast immediate VBI handler if pokey divisor is below 5
-	LDA SIOSPEED
+?ABSF01	LDA SIOSPEED
 	CMP #5
 	BCS ?NOVBI
-	LDA MYSPEED
-	LDY ?VBIADR
-	LDX ?VBIADR+1
+.if .def RELOCTABLE
+?ABSF02	LDY ?VBIADR
+?ABSF03	LDX ?VBIADR+1
+.else
+	LDY #<VBICODE
+	LDX #>VBICODE
+.endif
 	LDA #6
 	JSR $E45C
 ?NOVBI
@@ -328,10 +332,10 @@ DOHIDET	STA DRETRY
 ; clear timer1
 ?CLRTIM1	LDY #$00
 
-; set timer1 with Y*256 cycles
+; set timer1 with Y cycles
 ?STIMOUT	LDX #$00
 
-; set timer1 Y*256 + X cycles
+; set timer1 X*256 + Y cycles
 ?STIMOU2	LDA #1
 	JSR SETVBV
 .if .def RELOCTABLE
@@ -461,9 +465,7 @@ DOHIDET	STA DRETRY
 ; note: pokey is already set to receive mode (in rdquit),
 ; so we don't need to do the setup again
 
-?ABS63
 ?GETLP	
-;	JSR ?GETBYTE
 
 ?GETBYTE LDA #IMRECV
 ?GETBY1	BIT IRQST
@@ -484,7 +486,7 @@ DOHIDET	STA DRETRY
 	BMI ?DORTS
 
 	STA (BUFRLO),Y
-;?ABS64	JSR ?ADDSUM
+;?ABS63	JSR ?ADDSUM
 
 .if .not .def NOCKSUM
 	CLC
@@ -501,9 +503,9 @@ DOHIDET	STA DRETRY
 	BNE ?GETLP
 	LDA BFENHI
 	BNE ?GETLP
-?ABS65	LDA #$80
+	LDA #$80
 	STA GETFLG
-	JSR ?GETBYTE
+?ABS64	JSR ?GETBYTE
 
 .if .def DIAGSIO
 	STA ?DIAGBT
@@ -512,7 +514,7 @@ DOHIDET	STA DRETRY
 	CMP CHKSUM
 	BEQ ?DORTS
 	LDA #ERRCHK
-	JMP ?ERR
+?ABS65	JMP ?ERR
 .endif
 ?DORTS	RTS 
 
@@ -561,13 +563,17 @@ VBICODE	LDA CRITIC
 	BEQ ?RUNT1	; hi is also 0, execute timer vector
 	JMP $E462
 
+?ABSF04
 ?RUNT1	JSR ?RUNT11
 	JMP $E462
 ?RUNT11	JMP (CDTMA1)
 
 ?NOCRIT	JMP $E45F
 
+.if .def RELOCTABLE
+?ABSF05
 ?VBIADR	.WORD VBICODE
+.endif
 .endif
 
 ; the code starting here is only for diagnostic purposes and is
