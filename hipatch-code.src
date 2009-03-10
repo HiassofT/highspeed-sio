@@ -49,8 +49,10 @@ STDSIO	= PSTD
 	.include "hisiodet.src"
 	.include "hisiocode.src"
 
+.if .def FASTNMI
 	* = PNMI
 	.include "fastnmi.src"
+.endif
 
 .if .def PATCHKEY
 	* = PKEY
@@ -89,5 +91,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.14 090308"
+	.BYTE "Hias 1.15 090310"
 

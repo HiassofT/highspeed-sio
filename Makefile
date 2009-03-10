@@ -19,44 +19,43 @@ COMS =	hisio.com hisior.com hision.com hisiorn.com \
 	hisioi.com hisiori.com hisioni.com hisiorni.com \
 	dumpos.com 
 
-hipatch-code-key.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-key.bin -dPATCHKEY=1 hipatch-code.src
+hipatch-code-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dPATCHKEY=1 -dFASTVBI=1 hipatch-code.src
 
-hipatch-code-rom-key.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-rom-key.bin -dROMABLE=1 -dPATCHKEY=1 hipatch-code.src
+hipatch-code-rom-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dROMABLE=1 -dPATCHKEY=1 -dFASTVBI=1 hipatch-code.src
 
+hipatch-code-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dPATCHKEY=1 -dFASTNMI=1 hipatch-code.src
 
-hipatch-code-nokey.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-nokey.bin hipatch-code.src
-
-hipatch-code-rom-nokey.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -ohipatch-code-rom-nokey.bin -dROMABLE=1 hipatch-code.src
-
-
-hisio.com: hipatch.src hipatch-code-key.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisio.com -dPATCHKEY=1 hipatch.src
-
-hisior.com: hipatch.src hipatch-code-rom-key.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisior.com -dROMABLE=1 -dPATCHKEY=1 hipatch.src
-
-hision.com: hipatch.src hipatch-code-nokey.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohision.com hipatch.src
-
-hisiorn.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisiorn.com -dROMABLE=1 hipatch.src
+hipatch-code-rom-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dROMABLE=1 -dPATCHKEY=1 -dFASTNMI=1 hipatch-code.src
 
 
-hisioi.com: hipatch.src hipatch-code-key.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisioi.com -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+hisio.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dPATCHKEY=1 hipatch.src
 
-hisiori.com: hipatch.src hipatch-code-rom-key.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisiori.com -dROMABLE=1 -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+hisior.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 -dPATCHKEY=1 hipatch.src
 
-hisioni.com: hipatch.src hipatch-code-nokey.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisioni.com -dPATCHNMI=1 hipatch.src
+hision.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ hipatch.src
 
-hisiorni.com: hipatch.src hipatch-code-rom-nokey.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -ohisiorni.com -dROMABLE=1 -dPATCHNMI=1 hipatch.src
+hisiorn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 hipatch.src
+
+
+hisioi.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+
+hisiori.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+
+hisioni.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dPATCHNMI=1 hipatch.src
+
+hisiorni.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 -dPATCHNMI=1 hipatch.src
 
 
 hisio-reloc.bin: $(HISIOSRC)
@@ -87,18 +86,18 @@ hipatch.atr: $(COMS)
 	cp $(COMS) patchdisk
 	dir2atr 720 hipatch.atr patchdisk
 
-hicode-key.h: hipatch-code-rom-key.bin
-	xxd -i hipatch-code-rom-key.bin > hicode-key.h
+hicode-fastvbi.h: hipatch-code-rom-fastvbi.bin
+	xxd -i hipatch-code-rom-fastvbi.bin > hicode-fastvbi.h
 
-hicode-nokey.h: hipatch-code-rom-nokey.bin
-	xxd -i hipatch-code-rom-nokey.bin > hicode-nokey.h
+hicode-fastnmi.h: hipatch-code-rom-fastnmi.bin
+	xxd -i hipatch-code-rom-fastnmi.bin > hicode-fastnmi.h
 
-patchrom.o: patchrom.cpp patchrom.h hicode-key.h hicode-nokey.h
+patchrom.o: patchrom.cpp patchrom.h hicode-fastnmi.h hicode-fastvbi.h
 
 patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
-patchrom.exe: patchrom.cpp patchrom.h hicode-nokey.h hicode-key.h
+patchrom.exe: patchrom.cpp patchrom.h hicode-fastnmi.h hicode-fastvbi.h
 	i586-mingw32msvc-g++ $(CXXFLAGS) -o patchrom.exe patchrom.cpp
 	i586-mingw32msvc-strip patchrom.exe
 

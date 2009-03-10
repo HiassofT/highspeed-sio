@@ -60,6 +60,24 @@ DOHIDET	STA DRETRY
 	ADC #$FF
 	STA CDEVIC
 
+.if .def FASTVBI
+; save old immediate VBI handler
+	LDA $222
+	PHA
+	LDA $223
+	PHA
+; install fast immediate VBI handler if pokey divisor is below 5
+	LDA SIOSPEED
+	CMP #5
+	BCS ?NOVBI
+	LDA MYSPEED
+	LDY ?VBIADR
+	LDX ?VBIADR+1
+	LDA #6
+	JSR $E45C
+?NOVBI
+.endif
+
 	TSX 
 	STX STACKP
 ?ABS50	LDA SIOSPEED
@@ -239,6 +257,15 @@ DOHIDET	STA DRETRY
 ?ABS60
 ?GODR	JMP ?DRETLP	; yes, try it again
 ?ENDCMD	
+
+.if .def FASTVBI
+	PLA
+	TAX
+	PLA
+	TAY
+	LDA #6
+	JSR $E45C
+.endif
 
 	LDA #0
 	STA CRITIC
@@ -510,6 +537,38 @@ DOHIDET	STA DRETRY
 	ADC #$00
 	STA CHKSUM
 	RTS 
+
+.if .def FASTVBI
+
+VBICODE	LDA CRITIC
+	BEQ ?NOCRIT
+
+	INC 20
+	BNE ?NOC1
+	INC 19
+	BNE ?NOC1
+	INC 18
+
+?NOC1	LDA CDTMV1	; check lo byte. if its != 0 timer is running and it must be decremented.
+	BNE ?TIDEC	; go decrement, hi byte unchanged because lo != 0
+	LDA CDTMV1+1	; this branch: lo = 0
+	BEQ ?TIEXIT	; timer is zero (disabled, expired), exit from here
+	DEC CDTMV1+1
+?TIDEC	DEC CDTMV1
+	BEQ ?TICHK	; lo reached 0, check if we hi also reached 0
+?TIEXIT	JMP $E462	; timer still running or expired
+?TICHK	LDA CDTMV1+1
+	BEQ ?RUNT1	; hi is also 0, execute timer vector
+	JMP $E462
+
+?RUNT1	JSR ?RUNT11
+	JMP $E462
+?RUNT11	JMP (CDTMA1)
+
+?NOCRIT	JMP $E45F
+
+?VBIADR	.WORD VBICODE
+.endif
 
 ; the code starting here is only for diagnostic purposes and is
 ; normally not included

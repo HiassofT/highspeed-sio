@@ -370,9 +370,9 @@ TNMI	.BYTE "patched NMI handler",155
 .endif
 
 .if .def ROMABLE
-TTIT	.BYTE 155,"Highspeed SIO patch V1.14R",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.15R",155
 .else
-TTIT	.BYTE 155,"Highspeed SIO patch V1.14",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.15",155
 .endif
 	.BYTE "(c) 2009 by Matthias Reichl",155,155
 TTITL	= * - TTIT
@@ -384,16 +384,16 @@ TPAT	.BYTE "patching OS",155
 PCODE	= *
 
 .if .def ROMABLE
-  .if .def PATCHKEY
-	.incbin "hipatch-code-rom-key.bin"
+  .if .def PATCHNMI
+	.incbin "hipatch-code-rom-fastnmi.bin"
   .else
-	.incbin "hipatch-code-rom-nokey.bin"
+	.incbin "hipatch-code-rom-fastvbi.bin"
   .endif
 .else
-  .if .def PATCHKEY
-	.incbin "hipatch-code-key.bin"
+  .if .def PATCHNMI
+	.incbin "hipatch-code-fastnmi.bin"
   .else
-	.incbin "hipatch-code-nokey.bin"
+	.incbin "hipatch-code-fastvbi.bin"
   .endif
 .endif
 

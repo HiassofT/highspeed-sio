@@ -17,6 +17,9 @@ DIAGNORET = 1
 DIAGTX = 1
 ; SCREENOFF = 1
 
+; use immediate VBI ($222) instead of patching NMI handler
+FASTVBI = 1
+
 ; DIAGSIO = 1
 
 ; diag timing (in highspeed code)
@@ -25,9 +28,6 @@ DIAGTX = 1
 ; NONMI = 1
 
 ; USEDLI = 1
-
-; use immediate VBI ($222) instead of patching NMI handler
-USEVBI = 1
 
 ; don't do checksumming
 ; NOCKSUM = 1
@@ -102,7 +102,7 @@ SCREENOFF = 1
 
 .endif
 
-.if .not .def USEVBI
+.if .not .def FASTVBI
 ; patch OS for insane speeds
 INSANE	= 1
 .endif
@@ -170,13 +170,6 @@ RUN	LDA #0
 
 	LDA #DEFNMI
 	STA NMIEN
-.endif
-
-.if .def USEVBI
-	LDY #<FASTVBI
-	LDX #>FASTVBI
-	LDA #6
-	JSR $E45C
 .endif
 
 .if .def USEDLI
@@ -435,10 +428,6 @@ TSTAMP	.DC 4 0
 	.include "fastnmi.src"
 .endif
 
-.if .def USEVBI
-	.include "fastvbi.src"
-.endif
-
 	.include "hisiodet.src"
 	.include "hisiocode.src"
 
@@ -466,7 +455,7 @@ DLI	PHA
 .endif
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2009-02-18",155
+	.BYTE "highspeed SIO test 2009-03-10",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
 	.BYTE "basic test mode",155

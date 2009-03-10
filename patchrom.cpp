@@ -23,8 +23,8 @@
 #include <string.h>
 
 #include "patchrom.h"
-#include "hicode-key.h"
-#include "hicode-nokey.h"
+#include "hicode-fastvbi.h"
+#include "hicode-fastnmi.h"
 
 static unsigned char rombuf[ROMLEN];
 
@@ -159,7 +159,7 @@ int main(int argc, char** argv)
 
 	int idx = 1;
 
-	printf("patchrom V1.14 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.15 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
 
 	if (argc < 2) {
 		goto usage;
@@ -214,14 +214,19 @@ int main(int argc, char** argv)
 			return 1;
 		}
 	}
+	if (!is_xl && patch_nmi) {
+		printf("detected old OS, not patching NMI handler\n");
+		patch_nmi = false;
+	}
+
 	need_csum_update = rom_checksums_ok(is_xl);
 
 	// copy highspeed SIO code to ROM OS
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
-	if (patch_keyirq) {
-		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_key_bin, hipatch_code_rom_key_bin_len);
+	if (patch_nmi) {
+		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_fastnmi_bin, hipatch_code_rom_fastnmi_bin_len);
 	} else {
-		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_nokey_bin, hipatch_code_rom_nokey_bin_len);
+		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_fastvbi_bin, hipatch_code_rom_fastvbi_bin_len);
 	}
 
 	// copy old standard SIO code to highspeed SIO code
@@ -245,15 +250,11 @@ int main(int argc, char** argv)
 
 	// patch NMI handler
 	if (patch_nmi) {
-		if (is_xl) {
-			if (memcmp(rombuf + NMIVEC -  ROMBASE, orig_nmivec, nmivec_len) == 0) {
-				memcpy(rombuf + NMIVEC -  ROMBASE, new_nmivec, nmivec_len);
-				printf("patched NMI handler\n");
-			} else {
-				printf("unknown OS, not patching NMI handler\n");
-			}
+		if (memcmp(rombuf + NMIVEC -  ROMBASE, orig_nmivec, nmivec_len) == 0) {
+			memcpy(rombuf + NMIVEC -  ROMBASE, new_nmivec, nmivec_len);
+			printf("patched NMI handler\n");
 		} else {
-			printf("detected old OS, not patching NMI handler\n");
+			printf("unknown OS, not patching NMI handler\n");
 		}
 	}
 
