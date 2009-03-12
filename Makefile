@@ -1,6 +1,7 @@
 #all: hipatch.atr patchrom patchrom.exe
 
-all: hipatch.atr diag.atr diag-nodma.atr diag-ext.atr diag-ext-nodma.atr patchrom patchrom.exe
+all: hipatch.atr patchrom patchrom.exe \
+ diag.atr diag-vbi.atr diag-ext.atr diag-ext-vbi.atr
 
 ATASM=atasm
 ATASMFLAGS=
@@ -20,64 +21,64 @@ COMS =	hisio.com hisior.com hision.com hisiorn.com \
 	dumpos.com 
 
 hipatch-code-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dPATCHKEY=1 -dFASTVBI=1 hipatch-code.src
+	$(ATASM) $(ATASMFLAGS) -f0 -dFASTNMI=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 hipatch-code-rom-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dROMABLE=1 -dPATCHKEY=1 -dFASTVBI=1 hipatch-code.src
+	$(ATASM) $(ATASMFLAGS) -f0 -dFASTNMI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 hipatch-code-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dPATCHKEY=1 -dFASTNMI=1 hipatch-code.src
+	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 hipatch-code-rom-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -r -f0 -o$@ -dROMABLE=1 -dPATCHKEY=1 -dFASTNMI=1 hipatch-code.src
+	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 
 hisio.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dPATCHKEY=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -o$@ $<
 
 hisior.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 -dPATCHKEY=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
 
 hision.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ hipatch.src
+	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
 hisiorn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -o$@ $<
 
 
 hisioi.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dPATCHKEY=1 -o$@ $<
 
 hisiori.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 -dPATCHKEY=1 -dPATCHNMI=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
 
 hisioni.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dPATCHNMI=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -o$@ $<
 
 hisiorni.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ -dROMABLE=1 -dPATCHNMI=1 hipatch.src
+	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -o$@ $<
 
 
 hisio-reloc.bin: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -o$@ -dRELOCTABLE=1 -dSTART=4096 hisio.src
+	$(ATASM) $(ATASMFLAGS) -dRELOCTABLE=1 -dSTART=4096 -o$@ hisio.src
 
 hisio-reloc-fastvbi.bin: $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -o$@ -dRELOCTABLE=1 -dSTART=4096 -dFASTVBI=1 hisio.src
+	$(ATASM) $(ATASMFLAGS) -dRELOCTABLE=1 -dSTART=4096 -dFASTVBI=1 -o$@ hisio.src
 
 diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag-hias.atr diag.src
+	$(ATASM) $(ATASMFLAGS) -r -o$@ $<
 
 diag.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag.atr -dSHIPDIAG=1 diag.src
+	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=1 -r -o$@ $<
 
-diag-nodma.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag-nodma.atr -dSHIPDIAG=2 diag.src
+diag-vbi.atr: diag.src $(HISIOSRC) fastnmi.src
+	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=2 -r -o$@ $<
 
 diag-ext.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag-ext.atr -dSHIPDIAG=3 diag.src
+	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=3 -r -o$@ $<
 
-diag-ext-nodma.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -odiag-ext-nodma.atr -dSHIPDIAG=4 diag.src
+diag-ext-vbi.atr: diag.src $(HISIOSRC) fastnmi.src
+	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=4 -r -o$@ $<
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src

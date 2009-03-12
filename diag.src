@@ -3,9 +3,6 @@
 
 NOKEY=1
 
-; clear buffer before every SIO call
-CLRBUF=1
-
 .if .not .def SHIPDIAG
 
 ; ------------------------------------------------------------
@@ -16,6 +13,9 @@ CLRBUF=1
 DIAGNORET = 1
 DIAGTX = 1
 ; SCREENOFF = 1
+
+; clear buffer before every SIO call
+CLRBUF=1
 
 ; use immediate VBI ($222) instead of patching NMI handler
 FASTVBI = 1
@@ -81,10 +81,10 @@ DIAGTX = 1
 .endif
 
 .if SHIPDIAG=2
-; do timing tests with unmodified SIO code, Antic DMA disabled
+; do timing tests with unmodified SIO code, use VBI code instead of NMI
 DIAGNORET = 1
 DIAGTX = 1
-SCREENOFF = 1
+FASTVBI = 1
 .endif
 
 .if SHIPDIAG=3
@@ -94,10 +94,10 @@ DIAGTIM	= 1
 .endif
 
 .if SHIPDIAG=4
-; test with all diags in SIO code, Antic DMA disabled
+; test with all diags in SIO code, use VBI code instead of NMI
 DIAGSIO = 1
 DIAGTIM	= 1
-SCREENOFF = 1
+FASTVBI = 1
 .endif
 
 .endif
@@ -284,8 +284,6 @@ CLRLP	STA BUF,Y
 	BNE CLRLP
 .endif
 
-;	JSR $E459
-
 .if .def DIAGTP
 	LDA #0
 	STA NMIEN
@@ -379,7 +377,9 @@ TEND	LDA #$22
 	JSR PUTCHR
 .endif
 
-TEND2	JSR GETKEY
+TEND2	BPUT 0, TAGAL, TAGA
+
+	JSR GETKEY
 
 	CMP #27
 	BNE NOBOOT2
@@ -455,16 +455,19 @@ DLI	PHA
 .endif
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2009-03-10",155
+	.BYTE "highspeed SIO test 2009-03-11",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
-	.BYTE "basic test mode",155
+	.BYTE "basic test mode, patched NMI",155
 .endif
 .if SHIPDIAG = 2
-	.BYTE "basic test mode, ANTIC DMA off",155
+	.BYTE "basic test mode, fast VBI",155
 .endif
 .if SHIPDIAG = 3
-	.BYTE "extended test mode",155
+	.BYTE "extended test mode, patched NMI",155
+.endif
+.if SHIPDIAG = 4
+	.BYTE "extended test mode, fast VBI",155
 .endif
 .else
 	.BYTE "custom debug mode",155
@@ -472,7 +475,9 @@ MTXT	.BYTE 125
 .if .def NOKEY
 	.BYTE 155, "testing "
 MDENS	.BYTE "SD disk in D"
-MDRIV	.BYTE "0:"
+MDRIV	.BYTE "0:",155
+
+	.BYTE 155, "press OPTION to stop test"
 
 .else
 	.BYTE 155,"insert "
@@ -483,6 +488,10 @@ MDRIV	.BYTE "0: and",155
 	.BYTE 155,155
 
 MLEN	= * - MTXT
+
+TAGA	.BYTE 155, "press ESC to reboot or any",155
+	.BYTE "other key to restart test",155
+TAGAL	= * - TAGA
 
 	.IF (*&127)<>0
 	.DC (128-(*&127)) 0
