@@ -149,7 +149,7 @@ int main(int argc, char** argv)
 	bool need_csum_update;
 
 	bool patch_keyirq = true;
-	bool patch_nmi = false;
+	bool patch_nmi = true;
 
 	unsigned int sio_address;
 	unsigned int key_address;
@@ -158,6 +158,7 @@ int main(int argc, char** argv)
 	bool is_xl = true;
 
 	int idx = 1;
+	size_t read_len;
 
 	printf("patchrom V1.15 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
 
@@ -165,13 +166,13 @@ int main(int argc, char** argv)
 		goto usage;
 	}
 
-	if (argv[idx][0] == '-' && argv[idx][1] == 'n') {
+	if (argv[idx][0] == '-' && argv[idx][1] == 'k') {
 		patch_keyirq = false;
 		idx++;
 	}
 
-	if (argv[idx][0] == '-' && argv[idx][1] == 'i') {
-		patch_nmi = true;
+	if (argv[idx][0] == '-' && argv[idx][1] == 'n') {
+		patch_nmi = false;
 		idx++;
 	}
 
@@ -188,18 +189,28 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if (fread(rombuf, 1, ROMLEN, f) != ROMLEN) {
-		printf("error reading %s\n", origfile);
-		fclose(f);
-		return 1;
+	is_xl = true;
+
+	if ((read_len = fread(rombuf, 1, ROMLEN, f)) != ROMLEN) {
+		if (read_len == ROMLEN_OSA) {
+			printf("input ROM file is old 10k OS rev. A or B\n");
+			unsigned char tmpbuf[ROMLEN_OSA];
+			memcpy(tmpbuf, rombuf, ROMLEN_OSA);
+			memset(rombuf, 0xff, ROMLEN);
+			memcpy(rombuf+ROMBASE_OSA-ROMBASE, tmpbuf, ROMLEN_OSA);
+			is_xl = false;
+		} else {
+			printf("error reading %s\n", origfile);
+			fclose(f);
+			return 1;
+		}
 	}
 	fclose(f);
 	if (check_already_patched()) {
 		printf("%s is already patched\n", origfile);
 		return 1;
 	}
-	if (memcmp(rombuf + XL_SIO - ROMBASE, origcode, origcode_len) == 0) {
-		is_xl = true;
+	if (is_xl && memcmp(rombuf + XL_SIO - ROMBASE, origcode, origcode_len) == 0) {
 		sio_address = XL_SIO;
 		old_siocode = xl_oldcode;
 		key_address = XL_KEYIRQ;
@@ -281,9 +292,9 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-i] [-n] original.rom new.rom\n");
+	printf("usage: patchrom [-k] [-n] original.rom new.rom\n");
 	printf("options:\n");
-	printf("  -i  patch NMI for higher maximum speed\n");
-	printf("  -n  don't patch keyboard IRQ handler\n");
+	printf("  -k  don't patch keyboard IRQ handler\n");
+	printf("  -n  don't patch NMI handler\n");
 	return 1;
 }

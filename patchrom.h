@@ -8,6 +8,10 @@
 /* length of OS ROM - 16k */
 #define ROMLEN 16384
 
+/* length and starting address of old OS rev.A and B OS */
+#define ROMLEN_OSA 10240
+#define ROMBASE_OSA 0xD800
+
 /* base address for highspeed SIO code */
 #define HIBASE 0xCC00
 
