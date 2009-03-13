@@ -1,7 +1,7 @@
 #all: hipatch.atr patchrom patchrom.exe
 
 all: hipatch.atr patchrom patchrom.exe \
- diag.atr diag-vbi.atr diag-ext.atr diag-ext-vbi.atr
+ diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr
 
 ATASM=atasm
 ATASMFLAGS=
@@ -71,13 +71,13 @@ diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
 diag.atr: diag.src $(HISIOSRC) fastnmi.src
 	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=1 -r -o$@ $<
 
-diag-vbi.atr: diag.src $(HISIOSRC) fastnmi.src
+diag-nonmi.atr: diag.src $(HISIOSRC) fastnmi.src
 	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=2 -r -o$@ $<
 
 diag-ext.atr: diag.src $(HISIOSRC) fastnmi.src
 	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=3 -r -o$@ $<
 
-diag-ext-vbi.atr: diag.src $(HISIOSRC) fastnmi.src
+diag-ext-nonmi.atr: diag.src $(HISIOSRC) fastnmi.src
 	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=4 -r -o$@ $<
 
 test.com: test.src hi4000.com
