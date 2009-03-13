@@ -16,8 +16,8 @@ HISIOSRC=hisio.src hisiocode.src hisiodet.src hisio.inc fastnmi.src
 %.com: %.src
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
-COMS =	hisio.com hisior.com hision.com hisiorn.com \
-	hisioi.com hisiori.com hisioni.com hisiorni.com \
+COMS =	hisio.com hisiok.com hisiokn.com hision.com \
+	hisior.com hisiork.com hisiorkn.com hisiorn.com \
 	dumpos.com 
 
 hipatch-code-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
@@ -33,30 +33,30 @@ hipatch-code-rom-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 
-hisio.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -o$@ $<
-
-hisior.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
-
-hision.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -o$@ $<
-
-hisiorn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -o$@ $<
-
-
-hisioi.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
+hisio.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dPATCHKEY=1 -o$@ $<
 
-hisiori.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
-
-hisioni.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
+hisiok.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -o$@ $<
 
-hisiorni.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
+hision.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -o$@ $<
+
+hisiokn.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -o$@ $<
+
+hisior.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
+
+hisiork.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -o$@ $<
+
+hisiorn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
+
+hisiorkn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -o$@ $<
+
 
 
 hisio-reloc.bin: $(HISIOSRC)

@@ -1,4 +1,4 @@
-Highspeed SIO patch V1.14 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.15 for Atari XL/XE OS and MyIDE OS
 
 Copyright (c) 2006-2009 Matthias Reichl <hias@horus.com> and ABBUC
 
@@ -26,34 +26,132 @@ full speed. Other patches either disabled the MyIDE drives, didn't work
 reliable, supported only a few drives, or were disabled when pressing
 the reset button.
 
+And: this is also the first patch that supports the highest possible
+SIO speed (126kbit/sec) for normal operations!
+
 This patch works with the following OSes:
 
 - Stock Atari XL/XE OS
 - MyIDE OS versions 3.x and 4.x
 
+In addition to these OSes you can also create a patched "old"
+Atari 400/800 OS (rev. A and rev. B) on your PC that will work
+in XL/XE computers. Installing this patched OS in an Atari 400/800
+is not easily possible, because the patch uses ROM addresses
+$CC00-$CFFF which are not available in stock Atari 400/800 computers.
+
+Other OSes might work but are untested. If you have success with any
+other OS please drop me a line so I can include this information in
+future docs.
+
+
+IMPORTANT WARNING:
+
+The versions with the "fast NMI handler" always disable ATRACT mode
+when CRITIC is set (usually during SIO operations), the other
+versions disable ATRACT mode when running at speeds of 80kbit and
+higher. So don't blame me if you ruin your TV, I've warned you :-)
+
 
 2. How to use the patch
 
 You can either patch the currently active OS (which needs the RAM under
-the OS ROM) or install a patched OS ROM into your Atari (which doesn't
-use the RAM under the OS ROM and therefore also works with Turbo Basic
-and SpartaDos).
+the OS ROM) by running one of the "HISIO*.COM" files or install a
+patched OS ROM into your Atari (which doesn't use the RAM under the
+OS ROM and therefore also works with Turbo Basic and SpartaDos).
 
-The files "HISIO.COM", "HISION.COM", "HISIOR.COM", "HISIORN.COM"
-and "DUMPOS.COM" can be found in the ZIP as separate files and also
-in the included "hipatch.atr".
+The files "HISIO*.COM" and "DUMPOS.COM" can be found in the ZIP as
+separate files and also in the included "hipatch.atr".
 
-The "HISIO*.COM" files ending with an "I" include a special patch
-that uses a shorter NMI handler (it disables atract mode when doing
-SIO). With this patch the Atari is able to go up to 110kbit/sec.
+The "HISIO*.COM" files offer different features. If you are impatient
+just use the "HISIO.COM" file. Otherwise have a look at the version
+table below that describes the different features:
 
-To patch the currently active OS, either use "HISIO.COM" or
-"HISION.COM". The difference between these two is that the
-first one also patches the keyboard IRQ handler so that you
-can control the highspeed code with various keystrokes (see
-next section). The "HISION.COM" doesn't touch the keyboard IRQ,
-use this if you don't like the keyboard control or in the
-rare case where other software uses the keystrokes.
+Filename                     Features
+               hotkeys   fast NMI handler   ROM-able
+HISIO.COM      yes       yes                no
+HISIOK.COM     no        yes                no
+HISIOKN.COM    no        no                 no
+HISION.COM     yes       no                 no
+HISIOR.COM     yes       yes                yes
+HISIORK.COM    no        yes                yes
+HISIORKN.COM   no        no                 yes
+HISIORN.COM    yes       no                 yes
+
+Explanation of the features:
+
+* hotkeys:
+
+The keyboard IRQ routine of the OS is patched and you
+can enable/disable/reset the SIO patch using various
+keystrokes. Look at the next section for a list of
+available keystrokes.
+
+* fast NMI handler:
+
+This installs a faster NMI handler so that the highest
+possible SIO speed (126kbit/sec) works reliably. Without
+the patch only spees up to 110kbit/sec work reliably, 126kbit
+operation results in intermittant errors.
+
+The drawback is that some programs might not work correctly with
+the patched NMI handler (although I currently don't know of any).
+
+* ROM-able:
+
+This means you can dump the patched OS to a
+file (using "DUMPOS.COM") and then program the OS ROM-dump
+into an EPROM and install it into your Atari.
+The drawback is that the ROM-able versions use slightly more
+memory at the beginning of the stack area ($0100).
+
+If you want to burn a replacement ROM and install it into your Atari
+you first need to create a patched ROM. Currently there are two methods
+to do this:
+
+Start one of the ROM-able "HISIO*.COM" files to patch the ROM.
+Then start "DUMPOS.COM" and enter a filename (eg. "D:XLHI.ROM"). This
+program will then write a 16k ROM dump to that file. Now you can use your
+EPROM burner to write this dump to an EPROM.
+
+The other method is creating a patched ROM image on a PC running Windows
+or Unix. Windows users can use the included "patchrom.exe" file, Unix
+users first have to compile the "patchrom" in the source directory
+(just do a "cd src" and "make patchrom").
+
+"patchrom" needs two command line arguments: the first one is the
+filename of the original ROM image that you want to patch the second
+argument is the filename where the patched ROM image should be stored.
+So, for example, if you downloaded the MyIDE ROM "myide43i.rom" and
+want to create a patched ROM named "hi43i.rom" simply type:
+
+patchrom myide43i.rom hi43i.rom
+
+To create a patched ROM file without the keyboard IRQ handler, use
+the "-k" option (this has to be the first option passed to patchrom).
+For example:
+
+patchrom -k xl.rom xlhi.rom
+
+To create a patched ROM without the fast NMI handler, use the
+"-n" option. Of course you may also use both "-k" and "-n".
+
+Now you can use your EPROM burner to create a ROM replacement for
+your Atari.
+
+
+3. List of keystrokes
+
+If you decided to also patch the keyboard IRQ handler, the following
+keystrokes are available to control the highspeed SIO patch:
+
+SHIFT+CONTROL+S    Clear SIO speed table and enable highspeed SIO
+SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
+SHIFT+CONTROL+H    Enable highspeed SIO
+SHIFT+CONTROL+DEL  Coldstart Atari
+
+
+4. Technical details
 
 At first the patch checks if the current OS is compatible with
 the highspeed SIO patch. If it's not compatible you get an error
@@ -74,52 +172,6 @@ At last the OS in the RAM is patched and the highspeed SIO code is
 installed at $CC00-$CFFF. Please note: this memory region is originally
 used by the international character set, so if you switch to this
 character set you'll just get garbage on the screen.
-
-If you want to burn a replacement ROM and install it into your Atari
-you first need to create a patched ROM. Currently there are two methods
-to do this:
-
-Start "HISIOR.COM" (please note the "R" at the end!) or "HISIORN.COM"
-(without keyboard IRQ handler, like HISIO/HISION) to patch the ROM.
-Then start "DUMPOS.COM" and enter a filename (eg. "D:XLHI.ROM"). This
-program will then write a 16k ROM dump to that file. Now you can use your
-EPROM burner to write this dump to an EPROM.
-
-The other method is creating a patched ROM image on a PC running Windows
-or Unix. Windows users can use the included "patchrom.exe" file, Unix
-users first have to compile the "patchrom" in the source directory
-(just do a "cd src" and "make patchrom").
-
-"patchrom" needs two command line arguments: the first one is the
-filename of the original ROM image that you want to patch the second
-argument is the filename where the patched ROM image should be stored.
-So, for example, if you downloaded the MyIDE ROM "myide43i.rom" and
-want to create a patched ROM named "hi43i.rom" simply type:
-
-patchrom myide43i.rom hi43i.rom
-
-To create a patched ROM file without the keyboard IRQ handler, use
-the "-n" option (this has to be the first option passed to patchrom).
-For example:
-
-patchrom -n xl.rom xlhi.rom
-
-Now you can use your EPROM burner to create a ROM replacement for
-your Atari.
-
-
-3. List of keystrokes
-
-If you decided to also patch the keyboard IRQ handler, the following
-keystrokes are available to control the highspeed SIO patch:
-
-SHIFT+CONTROL+S    Clear SIO speed table and enable highspeed SIO
-SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
-SHIFT+CONTROL+H    Enable highspeed SIO
-SHIFT+CONTROL+DEL  Coldstart Atari
-
-
-4. Technical details
 
 Since memory is tight in the Atari 8bit computers the first decision
 was where to put it. Using memory in the standard RAM area wasn't an
@@ -336,4 +388,164 @@ at $FC20 is really a "LDA $D209". If not, you'll see a warning message
 that the keyboard IRQ has not been patched. This is a precaution if
 some later MyIDE OSes modify the code in this area (currently the
 MyIDE OSes patch the IRQ handler at a lower memory location).
+
+Why is it necessary to patch the NMI handler?
+
+Short answer: well, because it's too slow :-)
+
+The original NMI (actually: the VBI) handler needs too many CPU cycles.
+At every VBI (50 or 60 times per second) it is executed and this may
+result in a byte being missed (aka: overrun). At "normal" SIO speeds
+this is not a problem, even the "highspeed" transfer rate of disk drives
+(up to approx. 80kbit/sec) is fine. But at 92kbit/sec (pokey divisor 3)
+problems start.
+
+The highspeed SIO patches use two different approaches to solve this
+problem. To better understand how these approaches work it's necessary
+to know how the OS handles NMIs (VBIs in particular):
+
+At the very beginning the OS checks if it was a DLI, if yes it jumps
+to the DLI code (vector at $0200).
+
+Then it saves all registers and invokes the immediate VBI handler
+(vector at $0222).
+
+The immediate VBI handler ends with a JMP $E45F which run's the OS's
+immediate VBI code. This code increments the system clock ($12..$14),
+handles ATRACT mode, and handles the first system timer (used by the
+SIO code for timeout handling). At the end it checks if the CRITIC
+flag is set. If it is not set, the deferred VBI handler is executed
+(vector at $0224), which ends with a JMP $E462. If the critic bit
+is set (or if an IRQ is pending) the deferred VBI handler is not
+called but instead the VBI is ended with a JMP $E462.
+
+The last stage of the VBI code (executed through the JMP $E462) now
+restores all registers and ends the NMI with an "rti" instruction.
+
+When analyzing the OS code I realized that handling of ATRACT mode
+and the first system timer could be optimized for speed. So the first
+approach was quite simple:
+
+Install an immediate VBI handler that implements the code of the
+OS's immediate handler, but faster, and then do a JMP $E462 to end
+the VBI. Actually, the current implementation first checks if the
+CRITIC flag is set. If it's clear the immediate VBI handler exits
+immediately with a JMP $E45F and the standard OS immediate handler
+is used. Only if the CRITIC flag is set (during SIO operations), the
+faster VBI handler is used.
+
+To avoid compatibility problems this immediate VBI handler is only
+installed if the speed is higher than 80kbit and replaced by the
+previously installed immediate VBI handler at the end of each SIO
+operation.
+
+This first approach has several benefits:
+- SIO operations run fine up to 110kbit
+- Patching of the OS is not needed, therefore 110kbit is even possible
+  when using the highspeed SIO code in applications (for example
+  in MyPicoDos), and these applications even work with the old
+  OS rev. A/B
+
+To reliably get 126kbit/sec another approach is needed:
+
+Saving all the registers onto the stack and jumping through
+the immediate VBI handler vector needs too much time - we have
+a maximum of 140 (actually 141, but that's another story) CPU cycles
+available for each byte. So every cycle counts.
+
+So the second approach replaces the very first stage of the
+original NMI handler with it's own, faster code.
+
+Like the original code it first checks if the NMI was caused
+by a DLI and in this case runs the DLI handler.
+
+Otherwise it only saves the A register to the stack and checks the
+CRITIC flag. If it's clear, it saves all other registers onto the
+stack and starts the immediate VBI handler (vector $0222), like the
+original OS code. The only difference here is that the new code needs
+5 more cycles (for checking CRITIC) before the original $0222 vector
+is run.
+
+If CRITIC is set, the code continues incrementing the system clock and
+checking the first system timer. If the system timer reaches zero, the
+X and Y registers are also saved onto the stack and the system timer
+vector is called. Since the system timer vector is only used to handle
+timeouts (which is an error condition), this means we saved several
+cycles (storing/restoring the X and Y registers) in case of normal
+operations.
+
+These change was enough to make reliable 126kbit transmission
+possible. Well, OK, the SIO code also had to be optimized a little bit,
+otherwise it would not work if ANTIC DMA was enabled. But after optimizing
+the SIO code, this scheme works very well :-)
+
+
+5. Some really nasty details about POKEY noone seemed to have noticed before:
+
+During testing at very high speed (100 - 126 kbit) I noticed problems when
+the transmission speed was slightly above the nominal speed. Usually
+POKEY should accept speeds at some 3-5% above and below nominal speed.
+But at higher speeds going slightly above nominal speed, or even reaching
+nominal speed (at 126kbit) didn't work. But: if I added a short pause
+after each transmitted byte (by transmitting 2 stopbits instead of 1),
+I could get closer to the 126kbit limit (at 110kbit nominal speed wasn't
+a problem).
+
+So I did some quite sophisticated tests: Using a small CPLD I built my
+own serial transmitter, clocked by PHI2 and I wrote some VHDL code that
+allowed me to transmit arbitrary bit sequences and even adjust the length
+of each individual bit.
+
+At 126kbit, transmitting a continuous stream of 10 bits of 14 PHI2 cycles
+each, I noticed that POKEY received the first byte fine, but got errors
+on the second (and all following bytes). When analyzing the received bytes
+it was clear that POKEY somehow missed the start bit and then synchronized
+on the next high->low transition within the bitstream (using this transition
+as the new "start" bit). Of course, depending on the bitstream this could
+result in a framing error - when the "stopbit" was 0 instead of 1.
+
+I then "streched" the stopbit and discovered that transmission was fine
+if I stretched it by just one cycle - 15 instead of 14 cycles.
+
+I did some more testing, stretching other bits (for example the start
+bit or one of the data bits) by a single PHI2 cycle and this also worked.
+
+So I found the reason why adding a stopbit worked fine, but I still had
+to solve one mystery - why is +1% speed acceptable at divisor 8, but
+not at divisor 1?
+
+I had the theory that POKEY might not sample the input signal at the
+middle of the bit but maybe a little bit later. This would explain why
+lower nominal speeds work but higher speeds don't.
+
+So my goal was to discover where exactly POKEY samples the input signal.
+Using my CPLD I had all I needed to run an experiment:
+
+I transmitted the byte $31 and then reduced the length of bit 0 and at
+the same time stretched the length of bit 1. The total transmission time
+still was the same, and once POKEY receives $30 instead of $31 I know
+the exact sampling time.
+
+If bit 0 was 14, 13 or 12 cycles in length, transmission was fine,
+POKEY received a $31. But it bit 1 was 11 (or less) cycles long, POKEY
+received a $31. So this means POKEY samples at the 12th cycle.
+
+Actually, I had expected that POKEY samples on the 7th (or 8th) cycle,
+not at the 12th cycle - which means a shift of 5 (or 4) cycles from
+the center).
+
+Then I was interested if this shift was some absolute value or relative
+to speed, so I ran further tests: at divisor 1 POKEY samples at cycle
+13 (instead of 8), at divisor 40 it samples at cycle 52 (instead of 47).
+
+To double check these results I ran some other tests: instead of changing
+the length of bit 0/1, I changed the length of bit 7 and the stopbit.
+If bit 7 was too short, POKEY would sample the stopbit instead, resulting
+in a received $B1 instead of $31. The results were identical to the
+previous tests - all sampling occurs 5 cycles after the expected time.
+
+Although I know have some explanations for the transmission problems,
+I still don't know what's exactly going wrong inside POKEY. If someone
+has some more information, a theory, or even explanation, please
+contact me. I'd be very interested in any details!
 
