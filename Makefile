@@ -1,7 +1,7 @@
 #all: hipatch.atr patchrom patchrom.exe
 
 all: hipatch.atr patchrom patchrom.exe \
- diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr
+ diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr diag-hias.atr
 
 ATASM=atasm
 ATASMFLAGS=

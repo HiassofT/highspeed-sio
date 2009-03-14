@@ -36,7 +36,7 @@ FASTVBI = 1
 ;DIAGTX = 1
 
 ; diag specific timing problems
-; DIAGTP = 1
+DIAGTP = 1
 
 ; initial clock values
 CLK1 = $FF
@@ -349,7 +349,7 @@ TLOOP1	LDA DAUX2
 	LDA DAUX1
 	CMP #$D1
 	BNE TLOOP
-	BEQ TLOOP0
+	JMP TLOOP0
 
 TEND	LDA #$22
 	STA 559
