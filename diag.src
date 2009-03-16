@@ -12,13 +12,22 @@ NOKEY=1
 ; (even in non-diag mode)
 DIAGNORET = 1
 DIAGTX = 1
+; use immediate VBI ($222) instead of patching NMI handler
+;FASTVBI = 1
+
+; DIAGSIO = 1
+; DIAGTIM	= 1
+
+; DMADEF=0 ; screen off
+; DMADEF=$23 ; wide playfield
+;DMADEF=$26 ; normal PF, missile DMA
+;DMADEF=$36 ; normal PF, missile DMA, single line resolution
+; DMADEF=$2A ; normal PF, player DMA
+
 ; SCREENOFF = 1
 
 ; clear buffer before every SIO call
-CLRBUF=1
-
-; use immediate VBI ($222) instead of patching NMI handler
-FASTVBI = 1
+; CLRBUF=1
 
 ; DIAGSIO = 1
 
@@ -43,7 +52,10 @@ CLK1 = $FF
 CLK2 = $FF
 CLK3 = $FF
 ; lcount value
-LCNT = $40
+;LCNT = $8E
+
+; short additional delay loop
+;DELCNT = 80
 
 DRIVENO = 2
 
@@ -107,6 +119,9 @@ FASTVBI = 1
 INSANE	= 1
 .endif
 
+; use a fixed timout value, for worst-case testing
+FIXTOUT = $100
+
 	.include "cio.inc"
 	.include "hisio.inc"
 
@@ -150,7 +165,6 @@ DEFNMI	= $40
 	STA 2
 	LDA #>RUN
 	STA 3
-
 
 RUN	LDA #0
 	STA $301
@@ -218,7 +232,7 @@ RUN	LDA #0
 	STA $300
 	LDA #DRIVENO
 	STA $301
-	LDA #3
+	LDA #7
 	STA $306
 
 ; read sectors 4-720 in a loop forever
@@ -257,8 +271,8 @@ NOBOOT	LDA #TCMD
 	LDA #>BUF
 	STA DBUFHI
 
-.if .def SCREENOFF
-	LDA #0
+.if .def DMADEF
+	LDA #DMADEF
 	STA 559
 	STA $D400
 .endif
@@ -276,6 +290,9 @@ TLOOP	LDA 53279
 	LDA #TDIR
 	STA $303
 
+	LDA #0
+	STA NMIEN
+
 .if .def CLRBUF
 	LDA #0
 	TAY
@@ -285,8 +302,6 @@ CLRLP	STA BUF,Y
 .endif
 
 .if .def DIAGTP
-	LDA #0
-	STA NMIEN
 
 	LDA #CLK3
 	STA 20
@@ -296,18 +311,26 @@ CLRLP	STA BUF,Y
 	STA 18
 
 ; now wait for the right screen line
-?WTLC	LDA $D40B
+.if .def LCNT
+?WTLC1	LDA $D40B
+	CMP #LCNT-1
+	BNE ?WTLC1
+?WTLC2	STA $D40A
+	LDA $D40B
 	CMP #LCNT
-	BNE ?WTLC
+	BNE ?WTLC2
+.endif
 
-	LDA #DEFNMI
-	STA NMIEN
+.if .def DELCNT
+	LDX #DELCNT
+?WTDEL	DEX
+	BNE ?WTDEL
+.endif
+
 .endif
 
 .if .def DIAGTX
 ; record current timestamp
-        LDA #0
-        STA NMIEN
         LDA 18
         STA TSTAMP
         LDA 19
@@ -316,14 +339,9 @@ CLRLP	STA BUF,Y
         STA TSTAMP+2
         LDA $D40B
         STA TSTAMP+3
-        LDA #DEFNMI
-        STA NMIEN
 .endif
 
-.if .def NONMI
-	LDA #0
-	STA NMIEN
-.else
+.if .not .def NONMI
 	LDA #DEFNMI
 	STA NMIEN
 .endif
@@ -425,15 +443,7 @@ TSTAMP	.DC 4 0
 
 .if .def INSANE
 	.include "romram.src"
-	.include "fastnmi.src"
 .endif
-
-	.include "hisiodet.src"
-	.include "hisiocode.src"
-
-HIBUF   .DC 4 0
-SIOSPEED        .BYTE 0
-SPEEDTB .DC 8 0
 
 .if .def INSANE
 D301BAK	.BYTE 0
@@ -492,6 +502,32 @@ MLEN	= * - MTXT
 TAGA	.BYTE 155, "press ESC to reboot or any",155
 	.BYTE "other key to restart test",155
 TAGAL	= * - TAGA
+
+; assemble highspeed code at identical page-boundaries as hipatch code
+
+	.IF (*&255)<>0
+	.DC (256-(*&255)) 0
+	.ENDIF
+
+HIBUF   .DC 4 0
+SIOSPEED        .BYTE 0
+SPEEDTB .DC 8 0
+
+	.DC 19 0
+	.DC 21 0
+
+	* = $2335
+
+	.include "hisiodet.src"
+	.include "hisiocode.src"
+
+.if .def INSANE
+	* = $2950
+
+	.include "fastnmi.src"
+.endif
+
+
 
 	.IF (*&127)<>0
 	.DC (128-(*&127)) 0

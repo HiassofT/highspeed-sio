@@ -86,12 +86,12 @@
 	IMSEND = $10	; ready to send next byte
 	IMSCPL = $08	; transmission complete
 
-; and the samet, inverted, to reset IRQ status
+; and the same, inverted, to reset IRQ status
 	RMBRK = $7F
 	RMRECV = $DF
 	RMSEND = $EF
 
-; standard masks: break + send/receive + keyboard (kbd not handeled)
+; standard masks: break + send/receive
 	MSKRECV = $A0
 	MSKSEND = $90
 

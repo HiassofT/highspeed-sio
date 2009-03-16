@@ -284,79 +284,6 @@ DOHIDET	STA DRETRY
 	CLI 
 	RTS 
 
-?SENDBLK	LDY #$00	; short delay before sending data
-?WT1	INY 
-	BNE ?WT1
-	LDA #SKSEND	; set pokey to transmit data mode
-	STA SKCTL
-	STA SKREST
-	LDA #MSKSEND
-	STA IRQEN
-	LDA (BUFRLO),Y	; start transmission by sending first byte
-	STA CHKSUM
-	STA SEROUT
-	INY
-	BNE ?SND2	; always
-	
-?SND1	LDA (BUFRLO),Y
-?ABS61	JSR ?SENDBYT	; normal send, wait for pokey clear
-	INY 
-	BNE ?SND2
-	INC BUFRHI
-	DEC BFENHI
-
-; wait a litte after sending a full page, needed by some
-; drives when sending more than 256 bytes
-
-	LDX #$E0
-?WT2	INX 
-	BNE ?WT2
-?SND2	CPY BFENLO
-	BNE ?SND1
-	LDA BFENHI
-	BNE ?SND1
-	LDA CHKSUM
-?ABS62	JSR ?SENDBYT
-	LDA #IMSCPL
-?WTSND	BIT IRQST	; wait until transmit complete
-	BNE ?WTSND
-	RTS
-
-; cleanup, in case of error or end of transmission
-
-?CLEANUP LDA #$A0	; reset pokey
-	STA AUDC4
-	LDA #$3C	; clear command line
-	STA PBCTL
-
-; clear timer1
-?CLRTIM1	LDY #$00
-
-; set timer1 with Y cycles
-?STIMOUT	LDX #$00
-
-; set timer1 X*256 + Y cycles
-?STIMOU2	LDA #1
-	JSR SETVBV
-.if .def RELOCTABLE
-?ABS66	LDA ?ERRTOA
-	STA CDTMA1
-?ABS67	LDA ?ERRTOA+1
-	STA CDTMA1+1
-.else
-	LDA #<?ERRTO
-	STA CDTMA1
-	LDA #>?ERRTO
-	STA CDTMA1+1
-.endif
-?RDOK	LDA #0
-	RTS
-
-.if .def RELOCTABLE
-?ABS68
-?ERRTOA	.WORD ?ERRTO
-.endif
-
 ; read ACK/NAK, handle ERROR as NAK
 ; used when waiting for command frame ACK and data frame ACK
 
@@ -367,11 +294,16 @@ DOHIDET	STA DRETRY
 	STA IRQEN
 ?ABS70	JSR ?RDACK
 	BNE ?ERRNAK	; catch ERROR and handle it like NAK
-?CHKOK	RTS
+?RDOK	RTS
 
 ; set command timeout and wait for command complete
 
-?WAITCPL	LDA DTIMLO
+?WAITCPL
+.if .def FIXTOUT
+	LDX #>FIXTOUT
+	LDY #<FIXTOUT
+.else
+	LDA DTIMLO
 	ROR 
 	ROR 
 	TAY 
@@ -381,6 +313,7 @@ DOHIDET	STA DRETRY
 	ROR 
 	AND #$C0
 	TAY 
+.endif
 ?ABS71	JSR ?STIMOU2
 
 ; receive ACK/NAK, COMPLETE/ERROR
@@ -390,8 +323,7 @@ DOHIDET	STA DRETRY
 	STA SKREST
 	LDA #$3C	; clear command line
 	STA PBCTL
-	LDA #$80
-	STA GETFLG
+	LDY #$80
 ?ABS72	JSR ?GETBYTE
 
 .if .def DIAGSIO
@@ -456,18 +388,21 @@ DOHIDET	STA DRETRY
 	STY STATUS
 ?ABS75	JMP ?ENDCMD	; end command without retrying
 
-; read a byte
+
 
 ?GETBLK	LDY #$00
 	STY CHKSUM
-	STY GETFLG
 
 ; note: pokey is already set to receive mode (in rdquit),
 ; so we don't need to do the setup again
 
+; call GETBYTE with Y=$80 to receive a single byte
+
+?GETBYTE STY GETFLG
+
 ?GETLP	
 
-?GETBYTE LDA #IMRECV
+	LDA #IMRECV
 ?GETBY1	BIT IRQST
 	BPL ?ERRBRK	; break key pressed?
 	BNE ?GETBY1
@@ -476,10 +411,10 @@ DOHIDET	STA DRETRY
 	STA IRQEN
 	LDA #MSKRECV	; enable data-receive IRQ
 	STA IRQEN
-	LDA SKSTAT
+	LDA #$20
+	BIT SKSTAT
 	STA SKREST
 	BPL ?ERRFRM	; framing error
-	AND #$20
 	BEQ ?ERROVR	; data input overrun
 	TXA
 	BIT GETFLG
@@ -503,8 +438,7 @@ DOHIDET	STA DRETRY
 	BNE ?GETLP
 	LDA BFENHI
 	BNE ?GETLP
-	LDA #$80
-	STA GETFLG
+	LDY #$80
 ?ABS64	JSR ?GETBYTE
 
 .if .def DIAGSIO
@@ -518,7 +452,40 @@ DOHIDET	STA DRETRY
 .endif
 ?DORTS	RTS 
 
+; cleanup, in case of error or end of transmission
 
+?CLEANUP LDA #$A0	; reset pokey
+	STA AUDC4
+	LDA #$3C	; clear command line
+	STA PBCTL
+
+; clear timer1
+?CLRTIM1	LDY #$00
+
+; set timer1 with Y cycles
+?STIMOUT	LDX #$00
+
+; set timer1 X*256 + Y cycles
+?STIMOU2	LDA #1
+	JSR SETVBV
+.if .def RELOCTABLE
+?ABS66	LDA ?ERRTOA
+	STA CDTMA1
+?ABS67	LDA ?ERRTOA+1
+	STA CDTMA1+1
+.else
+	LDA #<?ERRTO
+	STA CDTMA1
+	LDA #>?ERRTO
+	STA CDTMA1+1
+.endif
+	LDA #0
+	RTS
+
+.if .def RELOCTABLE
+?ABS68
+?ERRTOA	.WORD ?ERRTO
+.endif
 
 ; send a byte. Note. we don't check for the break key
 ; here since it confuses several drives (eg. speedy 1050)
@@ -540,12 +507,48 @@ DOHIDET	STA DRETRY
 	STA CHKSUM
 	RTS 
 
+?SENDBLK	LDY #$00	; short delay before sending data
+?WT1	INY 
+	BNE ?WT1
+	LDA #SKSEND	; set pokey to transmit data mode
+	STA SKCTL
+	STA SKREST
+	LDA #MSKSEND
+	STA IRQEN
+	LDA (BUFRLO),Y	; start transmission by sending first byte
+	STA CHKSUM
+	STA SEROUT
+	INY
+	BNE ?SND2	; always
+	
+?SND1	LDA (BUFRLO),Y
+?ABS61	JSR ?SENDBYT	; normal send, wait for pokey clear
+	INY 
+	BNE ?SND2
+	INC BUFRHI
+	DEC BFENHI
+
+; wait a litte after sending a full page, needed by some
+; drives when sending more than 256 bytes
+
+	LDX #$E0
+?WT2	INX 
+	BNE ?WT2
+?SND2	CPY BFENLO
+	BNE ?SND1
+	LDA BFENHI
+	BNE ?SND1
+	LDA CHKSUM
+?ABS62	JSR ?SENDBYT
+	LDA #IMSCPL
+?WTSND	BIT IRQST	; wait until transmit complete
+	BNE ?WTSND
+	RTS
+
+
 .if .def FASTVBI
 
-VBICODE	LDA CRITIC
-	BEQ ?NOCRIT
-
-	INC 20
+VBICODE INC 20
 	BNE ?NOC1
 	INC 19
 	BNE ?NOC1

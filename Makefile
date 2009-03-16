@@ -66,19 +66,19 @@ hisio-reloc-fastvbi.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dRELOCTABLE=1 -dSTART=4096 -dFASTVBI=1 -o$@ hisio.src
 
 diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -r -o$@ $<
+	$(ATASM) $(ATASMFLAGS) -f0 -r -o$@ $<
 
 diag.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=1 -r -o$@ $<
+	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=1 -r -o$@ $<
 
 diag-nonmi.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=2 -r -o$@ $<
+	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=2 -r -o$@ $<
 
 diag-ext.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=3 -r -o$@ $<
+	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=3 -r -o$@ $<
 
 diag-ext-nonmi.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -dSHIPDIAG=4 -r -o$@ $<
+	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=4 -r -o$@ $<
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src
