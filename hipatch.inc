@@ -1,6 +1,6 @@
 ;  hipatch - 6502 high speed SIO code OS patch program
 ;
-;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;  Copyright (c) by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -16,6 +16,9 @@
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ;
+
+; indicate we are building the OS ROM PATCH
+HIPATCH = 1
 
 .if .def ROMABLE
   RAMBUF = $0100
@@ -41,14 +44,19 @@ SPEEDTB	= RAMBUF+1	; 8-byte table for drive speeds
   RESETAD = $0100	; at beginning of page 1
 .endif
 
-PDEST = $CC00		; starting address of code patch
-PSTD = $CC10		; original SIO code + JMP back
-PSIO = $CC20		; start of new highspeed code
+PDEST	= $CC00		; starting address of code patch
+PSTD	= $CC10		; original SIO code + JMP back
+PPWRUP	= $CC18		; powerup-code, checking for SHIFT (=cold boot)
 
-PNMI = $CF50		; new NMI handler
+PSIO	= $CC30		; start of new highspeed code
+
+; power-up code
+PUPCODE	= $C2B3		; this contains "LDA $033D"
+
+PNMI	= $CF68		; new NMI handler
 
 .if .def PATCHKEY
-PKEY = $CFB0		; new keyboard IRQ handler
+PKEY	= $CFB8		; new keyboard IRQ handler
 
 KEYIRQ  = $FC20 	; this contains "LDA $D209"
 .endif

@@ -1,6 +1,6 @@
 ;  highsiodet.src - check for highspeed drives
 ;
-;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;  Copyright (c) by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -19,15 +19,20 @@
 
 HISIO
 
+; the highspeed SIO patch checks for valid DUNIT values
+; before, so skip this test to save some memory
+
+.if .not .def HIPATCH
 	LDA DUNIT
 	BNE ?DOSIO
 
 	LDX #7		; DUNIT = 0 clears speed table
-?ABS01
-?CLRLP	STA SPEEDTB,X
+?CLRLP
+?ABS01	STA SPEEDTB,X
 	DEX
 	BPL ?CLRLP
 	RTS
+.endif
 
 ?DOSIO	LDX DUNIT
 ?ABS02	LDA SPEEDTB-1,X
@@ -89,8 +94,8 @@ HISIO
 	LDA #STDSPD	; no, just use standard SIO speed
 	BNE ?SETSP2
 
-?ABS16
-?GETST	STA SIOSPEED
+?GETST
+?ABS16	STA SIOSPEED
 	LDA #4
 	STA DBYTLO
 	LDX #$53
@@ -98,14 +103,15 @@ HISIO
 ?DOIMM	STX DCOMND
 	STA DSTATS
 ?DODET	LDA #1
+	LDX #DETCRETRY
 ?ABS17	JMP DOHIDET
 
 ?CHKHAP	LDX #$48	; check for happy 810
 	LDA #0
 	BEQ ?DOIMM
 
-?ABS18
-?SETSPD	LDA SIOSPEED
+?SETSPD
+?ABS18	LDA SIOSPEED
 ?SETSP2	LDX DUNIT
 	CLC		; add 1 to value to prevent endless loop
 	ADC #1		; if device sends a speed byte of 0

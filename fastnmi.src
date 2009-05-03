@@ -29,13 +29,6 @@ FASTNMI BIT $D40F
 	LDA CRITIC
 	BEQ ?NOCRIT
 
-	; testing: waste 12 cycles
-	.dc 10 $ea
-
-	; testing: waste 13 cycles
-	;LDA CRITIC
-	;.DC 6 $EA
-
 	INC 20
 	BNE ?NOC1
 	INC 19

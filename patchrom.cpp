@@ -73,6 +73,19 @@ static unsigned char new_nmivec[nmivec_len] = {
 	PNMI & 0xff,
 	PNMI >> 8 };
 
+#define powerupcode_len 3
+static unsigned char orig_powerupcode[powerupcode_len] = {
+	0xad, // LDA
+	0x3D, // 033D
+	0x03};
+
+/* powerupcode: check if SHIFT is pressed during reset,
+   if yes do: do a cold boot */
+static unsigned char new_powerupcode[powerupcode_len] = {
+	0x4C, // JMP
+	PUPCODE & 0xff,
+	PUPCODE >> 8 };
+
 #define CSUM1_ADR 0xC000
 #define CSUM2_ADR 0xFFF8
 
@@ -150,9 +163,11 @@ int main(int argc, char** argv)
 
 	bool patch_keyirq = true;
 	bool patch_nmi = true;
+	bool patch_powerup = true;
 
 	unsigned int sio_address;
 	unsigned int key_address;
+	unsigned int powerup_address;
 
 	unsigned char* old_siocode;
 	bool is_xl = true;
@@ -160,7 +175,7 @@ int main(int argc, char** argv)
 	int idx = 1;
 	size_t read_len;
 
-	printf("patchrom V1.15 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.18 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
 
 	if (argc < 2) {
 		goto usage;
@@ -173,6 +188,11 @@ int main(int argc, char** argv)
 
 	if (argv[idx][0] == '-' && argv[idx][1] == 'n') {
 		patch_nmi = false;
+		idx++;
+	}
+
+	if (argv[idx][0] == '-' && argv[idx][1] == 'p') {
+		patch_powerup = false;
 		idx++;
 	}
 
@@ -214,6 +234,7 @@ int main(int argc, char** argv)
 		sio_address = XL_SIO;
 		old_siocode = xl_oldcode;
 		key_address = XL_KEYIRQ;
+		powerup_address = XL_PUPCODE;
 	} else {
 		if (memcmp(rombuf + OLD_SIO - ROMBASE, origcode, origcode_len) == 0) {
 			is_xl = false;
@@ -225,9 +246,15 @@ int main(int argc, char** argv)
 			return 1;
 		}
 	}
-	if (!is_xl && patch_nmi) {
-		printf("detected old OS, not patching NMI handler\n");
-		patch_nmi = false;
+	if (!is_xl) {
+		if (patch_nmi) {
+			printf("detected old OS, not patching NMI handler\n");
+			patch_nmi = false;
+		}
+		if (patch_powerup) {
+			printf("detected old OS, not patching powerup/reset code\n");
+			patch_powerup = false;
+		}
 	}
 
 	need_csum_update = rom_checksums_ok(is_xl);
@@ -269,6 +296,15 @@ int main(int argc, char** argv)
 		}
 	}
 
+	if (patch_powerup) {
+		if (memcmp(rombuf + powerup_address -  ROMBASE, orig_powerupcode, powerupcode_len) == 0) {
+			memcpy(rombuf + powerup_address -  ROMBASE, new_powerupcode, powerupcode_len);
+			printf("patched powerup/reset code\n");
+		} else {
+			printf("unknown OS, not patching powerup/reset code\n");
+		}
+	}
+
 	if (need_csum_update) {
 		//printf("updating ROM checksums\n");
 		update_rom_checksums(is_xl);
@@ -292,9 +328,10 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-k] [-n] original.rom new.rom\n");
+	printf("usage: patchrom [-k] [-n] [-p] original.rom new.rom\n");
 	printf("options:\n");
 	printf("  -k  don't patch keyboard IRQ handler\n");
 	printf("  -n  don't patch NMI handler\n");
+	printf("  -p  don't patch powerup/reset code\n");
 	return 1;
 }

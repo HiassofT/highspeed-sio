@@ -1,6 +1,6 @@
 ;  highsiocode.src - highspeed SIO routine
 ;
-;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;  Copyright (c) by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -45,11 +45,14 @@ DOHISIO
 	LDA #$02
 .endif
 .endif
+	LDX #DEFCRETRY
 
 ; internal entry point for highspeed SIO detection:
 ; load A with 1, only 1 retry and no speed fallback
+; X must be set to number of command frame retries
 
 DOHIDET	STA DRETRY
+	STX CRETRY
 
 	SEI
 	LDA #$01
@@ -87,8 +90,7 @@ DOHIDET	STA DRETRY
 ?ABS50	LDA SIOSPEED
 	STA MYSPEED
 
-?DRETLP	LDA #$0D
-	STA CRETRY
+?DRETLP
 
 .if .def DIAGSIO
 	LDA #0
@@ -242,8 +244,8 @@ DOHIDET	STA DRETRY
 
 ?ABS57	JSR ?GETBLK	; receive data block
 
-?ABS58
-?SIOEND	JSR ?CLEANUP	; reset timers and pokey
+?SIOEND
+?ABS58	JSR ?CLEANUP	; reset timers and pokey
 	LDY STATUS	; was the command successful?
 	BEQ ?ENDCMD	; yes, we are done
 
@@ -258,8 +260,9 @@ DOHIDET	STA DRETRY
 	BEQ ?GODR	; don't fallback speed on command errors
 	LDA #STDSPD	; try it with standard speed this time
 	STA MYSPEED
-?ABS60
-?GODR	JMP ?DRETLP	; yes, try it again
+?GODR	LDA #DEFCRETRY
+	STA CRETRY
+?ABS60	JMP ?DRETLP	; yes, try it again
 ?ENDCMD	
 
 .if .def FASTVBI
@@ -289,10 +292,10 @@ DOHIDET	STA DRETRY
 
 ?CHKST	
 	LDY #$02
-?ABS69	JSR ?STIMOUT
+?ABS68	JSR ?STIMOUT
 	LDA #MSKRECV
 	STA IRQEN
-?ABS70	JSR ?RDACK
+?ABS69	JSR ?RDACK
 	BNE ?ERRNAK	; catch ERROR and handle it like NAK
 ?RDOK	RTS
 
@@ -314,7 +317,7 @@ DOHIDET	STA DRETRY
 	AND #$C0
 	TAY 
 .endif
-?ABS71	JSR ?STIMOU2
+?ABS70	JSR ?STIMOU2
 
 ; receive ACK/NAK, COMPLETE/ERROR
 
@@ -324,7 +327,7 @@ DOHIDET	STA DRETRY
 	LDA #$3C	; clear command line
 	STA PBCTL
 	LDY #$80
-?ABS72	JSR ?GETBYTE
+?ABS71	JSR ?GETBYTE
 
 .if .def DIAGSIO
 	STA ?DIAGBT
@@ -369,7 +372,7 @@ DOHIDET	STA DRETRY
 
 	LDX STACKP
 	TXS
-?ABS73	JMP ?SIOEND	; we got an error, cleanup and try to restart
+?ABS72	JMP ?SIOEND	; we got an error, cleanup and try to restart
 
 ?RDERR	LDA #ERRDEV	; command error
 	STA STATUS
@@ -383,18 +386,18 @@ DOHIDET	STA DRETRY
 	STA IRQEN
 	LDX STACKP
 	TXS
-?ABS74	JSR ?CLEANUP
+?ABS73	JSR ?CLEANUP
 	LDY #ERRBRK	; set error code $80
 	STY STATUS
-?ABS75	JMP ?ENDCMD	; end command without retrying
+?ABS74	JMP ?ENDCMD	; end command without retrying
 
+
+; note: pokey is already set to receive mode (in rdquit),
+; so we don't need to do the setup again
 
 
 ?GETBLK	LDY #$00
 	STY CHKSUM
-
-; note: pokey is already set to receive mode (in rdquit),
-; so we don't need to do the setup again
 
 ; call GETBYTE with Y=$80 to receive a single byte
 
@@ -421,7 +424,6 @@ DOHIDET	STA DRETRY
 	BMI ?DORTS
 
 	STA (BUFRLO),Y
-;?ABS63	JSR ?ADDSUM
 
 .if .not .def NOCKSUM
 	CLC
@@ -439,7 +441,7 @@ DOHIDET	STA DRETRY
 	LDA BFENHI
 	BNE ?GETLP
 	LDY #$80
-?ABS64	JSR ?GETBYTE
+?ABS63	JSR ?GETBYTE
 
 .if .def DIAGSIO
 	STA ?DIAGBT
@@ -448,7 +450,7 @@ DOHIDET	STA DRETRY
 	CMP CHKSUM
 	BEQ ?DORTS
 	LDA #ERRCHK
-?ABS65	JMP ?ERR
+?ABS64	JMP ?ERR
 .endif
 ?DORTS	RTS 
 
@@ -469,9 +471,9 @@ DOHIDET	STA DRETRY
 ?STIMOU2	LDA #1
 	JSR SETVBV
 .if .def RELOCTABLE
-?ABS66	LDA ?ERRTOA
+?ABS65	LDA ?ERRTOA
 	STA CDTMA1
-?ABS67	LDA ?ERRTOA+1
+?ABS66	LDA ?ERRTOA+1
 	STA CDTMA1+1
 .else
 	LDA #<?ERRTO
@@ -483,8 +485,8 @@ DOHIDET	STA DRETRY
 	RTS
 
 .if .def RELOCTABLE
-?ABS68
-?ERRTOA	.WORD ?ERRTO
+?ERRTOA
+?ABS67	.WORD ?ERRTO
 .endif
 
 ; send a byte. Note. we don't check for the break key
@@ -548,11 +550,14 @@ DOHIDET	STA DRETRY
 
 .if .def FASTVBI
 
-VBICODE INC 20
+VBICODE 
+.if .not .def FASTVBI_NOCLOCK
+	INC 20
 	BNE ?NOC1
 	INC 19
 	BNE ?NOC1
 	INC 18
+.endif
 
 ?NOC1	LDA CDTMV1	; check lo byte. if its != 0 timer is running and it must be decremented.
 	BNE ?TIDEC	; go decrement, hi byte unchanged because lo != 0
@@ -566,16 +571,16 @@ VBICODE INC 20
 	BEQ ?RUNT1	; hi is also 0, execute timer vector
 	JMP $E462
 
-?ABSF04
-?RUNT1	JSR ?RUNT11
+?RUNT1
+?ABSF04	JSR ?RUNT11
 	JMP $E462
 ?RUNT11	JMP (CDTMA1)
 
 ?NOCRIT	JMP $E45F
 
 .if .def RELOCTABLE
-?ABSF05
-?VBIADR	.WORD VBICODE
+?VBIADR
+?ABSF05	.WORD VBICODE
 .endif
 .endif
 

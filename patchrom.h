@@ -22,7 +22,7 @@
 #define HISTDSIO 0xCC10
 
 /* entry point for new highspeed SIO code */
-#define HISIO 0xCC20
+#define HISIO 0xCC30
 
 /* address of SIO code in XL ROM */
 #define XL_SIO 0xE971
@@ -35,7 +35,7 @@
 #define OLD_KEYIRQ 0xFFBE
 
 /* address of new, patched IRQ code */
-#define PKEYIRQ 0xCFB0
+#define PKEYIRQ 0xCFB8
 
 /* address of NMI vector */
 #define NMIVEC 0xFFFA
@@ -44,6 +44,10 @@
 #define XL_NMIHAN 0xC018
 
 /* address of new NMI code */
-#define PNMI 0xCF50
+#define PNMI 0xCF68
 
+/* address of powerup code containing "LDA $03B3" */
+#define XL_PUPCODE 0xC2B3
 
+/* address of new, patched powerup/reset code */
+#define PUPCODE 0xCC18

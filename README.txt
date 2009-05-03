@@ -1,6 +1,6 @@
-Highspeed SIO patch V1.15 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.18 for Atari XL/XE OS and MyIDE OS
 
-Copyright (c) 2006-2009 Matthias Reichl <hias@horus.com> and ABBUC
+Copyright (c) 2006-2009 Matthias Reichl <hias@horus.com>
 
 This program is proteced under the terms of the GNU General Public
 License, version 2. Please read LICENSE for further details.
@@ -67,32 +67,49 @@ The "HISIO*.COM" files offer different features. If you are impatient
 just use the "HISIO.COM" file. Otherwise have a look at the version
 table below that describes the different features:
 
-Filename                     Features
-               hotkeys   fast NMI handler   ROM-able
-HISIO.COM      yes       yes                no
-HISIOK.COM     no        yes                no
-HISIOKN.COM    no        no                 no
-HISION.COM     yes       no                 no
-HISIOR.COM     yes       yes                yes
-HISIORK.COM    no        yes                yes
-HISIORKN.COM   no        no                 yes
-HISIORN.COM    yes       no                 yes
+Filename                        Features
+               coldstart   hotkeys   fast NMI handler   ROM-able
+HISIO.COM      yes         yes       yes                no
+HISIOK.COM     yes         no        yes                no
+HISIOKN.COM    yes         no        no                 no
+HISION.COM     yes         yes       no                 no
+HISIOR.COM     yes         yes       yes                yes
+HISIORK.COM    yes         no        yes                yes
+HISIORKN.COM   yes         no        no                 yes
+HISIORN.COM    yes         yes       no                 yes
 
 Explanation of the features:
 
+* coldstart
+
+Pressing SHIFT+RESET does a coldstart instead of a warmstart.
+All versions of the patch support this feature, but there are some
+restrictions:
+
+- This feature is not available when using patchrom to patch an
+  "old" (rev. A or B) OS, pressing RESET always results in a
+  coldstart.
+
+- This feature is also not available when using the MyIDE "soft"
+  (flashcart) OSes. Please use the builtin MyIDE OS or Highspeed
+  SIO Patch keystrokes instead.
+ 
 * hotkeys:
 
-The keyboard IRQ routine of the OS is patched and you
-can enable/disable/reset the SIO patch using various
-keystrokes. Look at the next section for a list of
-available keystrokes.
+The keyboard IRQ routine of the OS is patched and you can control
+the SIO patch using various keystrokes:
+
+SHIFT+CONTROL+S    Clear SIO speed table and enable highspeed SIO
+SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
+SHIFT+CONTROL+H    Enable highspeed SIO
+SHIFT+CONTROL+DEL  Coldstart Atari
 
 * fast NMI handler:
 
 This installs a faster NMI handler so that the highest
-possible SIO speed (126kbit/sec) works reliably. Without
-the patch only spees up to 110kbit/sec work reliably, 126kbit
-operation results in intermittant errors.
+possible SIO speed (POKEY divisor 0, 126kbit/sec) works reliable.
+Without the patch only speeds up to 110kbit/sec (divisor 1) work
+reliable, 126kbit operation results in intermittant errors.
 
 The drawback is that some programs might not work correctly with
 the patched NMI handler (although I currently don't know of any).
@@ -109,7 +126,7 @@ If you want to burn a replacement ROM and install it into your Atari
 you first need to create a patched ROM. Currently there are two methods
 to do this:
 
-Start one of the ROM-able "HISIO*.COM" files to patch the ROM.
+Start one of the ROM-able "HISIOR*.COM" files to patch the ROM.
 Then start "DUMPOS.COM" and enter a filename (eg. "D:XLHI.ROM"). This
 program will then write a 16k ROM dump to that file. Now you can use your
 EPROM burner to write this dump to an EPROM.
@@ -134,24 +151,17 @@ For example:
 patchrom -k xl.rom xlhi.rom
 
 To create a patched ROM without the fast NMI handler, use the
-"-n" option. Of course you may also use both "-k" and "-n".
+"-n" option. To disable patching the powerup code (coldstart
+when pressing SHIFT+RESET), use the "-p" option. Of course you may
+also use two or more options at the same time. For example:
+
+patchrom -k -n -p xl.rom xlhi2.rom
 
 Now you can use your EPROM burner to create a ROM replacement for
 your Atari.
 
 
-3. List of keystrokes
-
-If you decided to also patch the keyboard IRQ handler, the following
-keystrokes are available to control the highspeed SIO patch:
-
-SHIFT+CONTROL+S    Clear SIO speed table and enable highspeed SIO
-SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
-SHIFT+CONTROL+H    Enable highspeed SIO
-SHIFT+CONTROL+DEL  Coldstart Atari
-
-
-4. Technical details
+3. Technical details
 
 At first the patch checks if the current OS is compatible with
 the highspeed SIO patch. If it's not compatible you get an error
@@ -192,22 +202,35 @@ the first time).
 The versions with keyboard control need one more byte which is used
 to enable/disable the highspeed SIO code at all.
 
-The "RAM version" of the patch (HISIO.COM) uses the memory locations
-$CC00-$CC0D for this variables (HISION: $CC00-$CC0C), the ROMable
-version (HISIOR.COM) uses memory locations $0100-$010D (HISIORN:$0100-$010C,
-the beginning of the stack area). Only very few programs use the very
+The "RAM versions" of the patch (HISIO, HISION) use the memory locations
+at $CC0x for there variables, the ROM-able versions use memory locations
+at the beginning of the stack area ($010x) for these variables. In addition
+to these locations the patch needs some more bytes to make the software
+patch reset-proof. This reset routine is placed at the beginning of
+the stack area and called via CASINI ($2/$3). Of course this reset-routine
+is not needed when you install a patched OS ROM in your Atari, in this
+case only the the 13 (or 14) bytes for the SIO variables is needed.
+The reset routine is also not needed with the MyIDE "soft-OS", which
+installs it's own reset routine (also using CASINI).
+
+Here's an overview of the memory usage of the various versions:
+
+Filename           SIO           RESET             Total lowmem
+                variables       handler        RAM ver.       ROM ver. 
+HISIO.COM      $CC00-$CC0D    $0100-$0112    $0100-$0112        n/a
+HISIOK.COM     $CC00-$CC0C    $0100-$0112    $0100-$0112        n/a
+HISIOKN.COM    $CC00-$CC0C    $0100-$0112    $0100-$0112        n/a
+HISION.COM     $CC00-$CC0D    $0100-$0112    $0100-$0112        n/a
+HISIOR.COM     $0100-$010D    $010E-$0120    $0100-$0120    $0100-$010D
+HISIORK.COM    $0100-$010C    $010D-$011F    $0100-$011F    $0100-$010C
+HISIORKN.COM   $0100-$010C    $010D-$011F    $0100-$0120    $0100-$010C
+HISIORN.COM    $0100-$010D    $010E-$0120    $0100-$011F    $0100-$010D
+
+The last two columns contain the total "standard" memory usage when
+using the software patch ("RAM ver.") and when installing a patched
+OS ROM in the Atari ("ROM ver."). Only very few programs use the very
 beginning of the stack area, so compatibility is quite high.
 
-To make the software patch reset-proof (the ROM OS is activated when
-pressing the reset button), it also needs some more bytes to install
-a reset handler. HISIO.COM and HISION.COM use $0100-$0108, the ROMable
-patch HISIOR.COM uses $010E-$0116 (HISIORN.COM. $010D-$0115) for this
-code.  The reset code is activated by pointing CASINI ($2/$3) to this
-memory location, but only if CASINI was not already used before.
-Note: The MyIDE soft-OS installs it's own reset-handler that switches
-to RAM-OS using CASINI, so there's no need to install another handler.
-Of course, there's also no need for a reset handler if you use a
-patched ROM installed into your Atari.
 
 How does this patch hook into the OS?
 
@@ -223,10 +246,10 @@ $E971 code isn't reached at all.
 
 The highspeed SIO patch checks if the code at $E971 matches the one
 of the original XL OS and replaces the first 4 bytes with a
-"NOP" and a "JMP $CC20". The original code ("TSX" and "STX $0318")
+"NOP" and a "JMP $CC30". The original code ("TSX" and "STX $0318")
 is copied to $CC10, followed by a "JMP $E974".
 
-The highspeed SIO code at $CC20 first checks if a drive (from
+The highspeed SIO code at $CC30 first checks if a drive (from
 D1: to D8:) is to be accessed. If not, it jumps to $CC10 and thus
 uses the standard OS code.
 
@@ -266,20 +289,23 @@ and stores a $28 (pokey divisor for ~19kbps) in the speed table.
 Once the SIO speed and type as been determined, only the code in
 hisiocode.src is used.
 
+
 Implementation of the highspeed SIO code:
 
 Compared to the original SIO code (which is completely IRQ driven)
 this implementation doesn't use IRQs at all (note the "SEI" at the
 very beginning of the SIO code). The code is therefore significantly
 faster and can reliably operate at speeds up to ~80kbps (pokey divisor 4).
+Higher speeds (up to 126kbit/sec) are possible, too, but require
+a modified NMI (VBI) handler code. See below for more details.
 
-Note: Although the code works fine at this speed I don't recommend
-using more than ~70kbps (pokey divisor 6). First of all, if you have several
+Note: I don't recommend using more than ~70kbps (pokey divisor 6)
+for "everyday operations". First of all, if you have several
 devices in your SIO chain the electrical signal on the SIO bus may
 suffer and thus you might end up with occasional transmission errors.
 Then, if you load a program with a title screen and this code uses
-either a lot of DLIs or hooks into the immediate VBI, the SIO code
-might miss some bytes because the Atari is busy with other stuff...
+DLIs, PM graphics or wide display mode, the SIO code might miss some
+bytes because the Atari is busy with other stuff...
 
 Before I start describing the implementation details, here is a
 description of how the SIO protocol works (at standard speed).
@@ -372,11 +398,12 @@ Happy (810) Warp mode only supports the commands $50, $52 and $57 (put,
 read, write sector) in highspeed. Highspeed mode is indicated by setting
 bit 5 of DCOMND.
 
+
 Implementation of the keyboard IRQ patch:
 
 The keyboard IRQ patch hooks into the IRQ handler at $FC20. The original
 code contains a "LDA $D209" at this location, which is then replaced
-by a "JMP $CF80", the new keyboard hook. The new code reads the current
+by a "JMP $CFB8", the new keyboard hook. The new code reads the current
 keyboard code (again, a "LDA $D209") and then checks if it matches one
 of the special keystrokes. In any case the keyboard code read is preserved
 and then passed on to the original IRQ handler. The end of the new
@@ -388,6 +415,21 @@ at $FC20 is really a "LDA $D209". If not, you'll see a warning message
 that the keyboard IRQ has not been patched. This is a precaution if
 some later MyIDE OSes modify the code in this area (currently the
 MyIDE OSes patch the IRQ handler at a lower memory location).
+
+
+Implementation of the coldstart/powerup patch:
+
+This patch hooks at the beginning of the RESET routine, just after
+the short software delay, when PUPBT1..3 ($033D-$033F) are checked.
+The first "LDA $033D" at $C2B3 is replaced with a "JMP $CC18".
+The new reset code at $CC18 then enables POKEYs keyboard scanning
+and checks if the SHIFT key is pressed. In this case the A register
+contains $00. If SHIFT is not pressed, the contents of $033D (usually
+$5C) are loaded. Then the original reset/powerup code is continued
+with a "JMP $C2B6". Since A will be $00 (instead of $5C) when SHIFT
+was pressed, the OS recognizes the mismatch, thinks the Atari was
+just powered up and do a coldstart initialization.
+
 
 Why is it necessary to patch the NMI handler?
 
@@ -420,7 +462,7 @@ is set (or if an IRQ is pending) the deferred VBI handler is not
 called but instead the VBI is ended with a JMP $E462.
 
 The last stage of the VBI code (executed through the JMP $E462) now
-restores all registers and ends the NMI with an "rti" instruction.
+restores all registers and ends the NMI with an "RTI" instruction.
 
 When analyzing the OS code I realized that handling of ATRACT mode
 and the first system timer could be optimized for speed. So the first
@@ -479,8 +521,17 @@ possible. Well, OK, the SIO code also had to be optimized a little bit,
 otherwise it would not work if ANTIC DMA was enabled. But after optimizing
 the SIO code, this scheme works very well :-)
 
+Please note: At 126kbit/sec the Atari is extremely close to it's limit.
+At standard "GRAPHICS 0" mode Antic steals a lot of cycles, but there
+are just enough cycles left for the CPU to handle this rate. If you
+enable PM graphics or widescreen (48 characters) mode, Antic steals too
+many cycles and the CPU cannot handle the rate anymore. Other Antic
+display modes (even "GRAPHICS 8") leave more cycles to the CPU so
+it is not too critical. Graphics 0 is really one of the worst cases
+(together with the multicolor text mode, Graphics 12).
 
-5. Some really nasty details about POKEY noone seemed to have noticed before:
+
+4. Some really nasty details about POKEY noone seemed to have noticed before:
 
 During testing at very high speed (100 - 126 kbit) I noticed problems when
 the transmission speed was slightly above the nominal speed. Usually

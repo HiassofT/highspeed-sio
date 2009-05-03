@@ -1,6 +1,6 @@
 ;  highsio.inc - definitions for highspeed SIO code
 ;
-;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;  Copyright (c) by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -29,8 +29,14 @@
 ; $36/$37 are kept free to avoid troubles with TurboDOS
 
 ; re-using original SIO ZP locations $38 - $3C for my own code
-	CRETRY = $38
-	DRETRY = $39
+	CRETRY = $38	; command frame retries
+	DRETRY = $39	; data frame retries
+
+; default number of command frame retries
+	DEFCRETRY = $0E
+
+; number of command frame retries when checking highspeed mode
+	DETCRETRY = $05
 
 ; speed used by this SIO command (changed to standard for second retry)
 	MYSPEED = $3A

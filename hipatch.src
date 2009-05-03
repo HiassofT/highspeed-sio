@@ -1,6 +1,6 @@
 ;  hipatch - 6502 high speed SIO code OS patch program
 ;
-;  Copyright (c) by ABBUC e.V. (www.abbuc.de) and Matthias Reichl
+;  Copyright (c) by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@
 	.include "cio.inc"
 
 .bank
+
+.if .def ROMABLE
+PATCHRESET=1
+.endif
 
 ORG	= $6000
 
@@ -181,6 +185,35 @@ CHKNMI3
 
 .endif
 
+
+.if .def PATCHRESET
+; check if we can patch the powerup/reset code
+
+	LDX #2
+CHKBT	LDA PUPCODE,X
+	CMP XLPUP,X
+	BNE CHKBT1
+	DEX
+	BPL CHKBT
+	BMI CHKBT2
+
+CHKBT1	PRINT 0, TNOPUP
+	INC WARNING
+	JMP CHKBT4
+
+CHKBT2	LDX #2
+CHKBT3	LDA MYPUP,X
+	STA PUPCODE,X
+	DEX
+	BPL CHKBT3
+
+	PRINT 0, TPUP
+
+CHKBT4
+
+.endif
+
+
 .IF .DEF ROMABLE
 ; update ROM checksums
 	JSR UPDCSUM
@@ -212,7 +245,12 @@ WARNING	.BYTE 0
 
 	.include "romram.src"
 
-RESET	LDA $D301
+; reset routine: 
+RESET	LDA $D20F
+	AND #8
+	BNE ?NOCOLD
+	JMP $E477	; do a coldstart if SHIFT is pressed
+?NOCOLD	LDA $D301
 	AND #$FE
 	STA $D301
 	RTS
@@ -230,6 +268,13 @@ XLKEY	LDA $D209
 
 ; patched contents of keyboard IRQ handler
 MYKEY	JSR PKEY
+.endif
+
+.if .def PATCHRESET
+; original contents of reset code
+XLPUP	LDA $033D
+; patched contents of reset code
+MYPUP	JMP PPWRUP
 .endif
 
 .if .def ROMABLE
@@ -369,10 +414,15 @@ TNONMI	.BYTE "unknown ROM, not patching NMI",155
 TNMI	.BYTE "patched NMI handler",155
 .endif
 
+.if .def PATCHRESET
+TNOPUP	.BYTE "unknown ROM, not patching powerup code",155
+TPUP	.BYTE "patched powerup code",155
+.endif
+
 .if .def ROMABLE
-TTIT	.BYTE 155,"Highspeed SIO patch V1.15R",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.18R",155
 .else
-TTIT	.BYTE 155,"Highspeed SIO patch V1.15",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.18",155
 .endif
 	.BYTE "(c) 2009 by Matthias Reichl",155,155
 TTITL	= * - TTIT

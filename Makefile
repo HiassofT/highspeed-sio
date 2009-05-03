@@ -105,6 +105,11 @@ patchrom.exe: patchrom.cpp patchrom.h hicode-fastnmi.h hicode-fastvbi.h
 	i586-mingw32msvc-g++ $(CXXFLAGS) -o patchrom.exe patchrom.cpp
 	i586-mingw32msvc-strip patchrom.exe
 
+atarisio: highsio-atarisio.bin
+
+highsio-atarisio.bin: hisio.src hisio.inc hisiocode.src hisiodet.src
+	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dRELOCTABLE -dSTART=4096 -o$@ $<
+
 clean:
 	rm -f *.bin *.com *.atr *.o patchrom.exe patchrom
 	rm -rf disk patchdisk

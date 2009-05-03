@@ -465,7 +465,7 @@ DLI	PHA
 .endif
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2009-03-13",155
+	.BYTE "highspeed SIO test 2009-05-03",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
 	.BYTE "basic test mode, patched NMI",155
