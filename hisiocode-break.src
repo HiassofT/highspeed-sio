@@ -1,4 +1,4 @@
-;  highsiocode.src - highspeed SIO routine, base file
+;  highsiocode-break.src - highspeed SIO routine, break key handler
 ;
 ;  Copyright (c) 2003-2009 by Matthias Reichl <hias@horus.com>
 ;
@@ -15,24 +15,16 @@
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-;
 
-; NOTE: the code in hisiocode-receive.src (actually the part
-; starting from "?GETLP" up to the last "BNE ?GETLP") should
-; not cross a page boundary, otherwise there's an increased
-; chance for overruns at 126kbit/sec!
-;
-; You may arrange the code parts in different order, but be sure
-; that "-check" and "-break" should be close to "-receive", the
-; code in "-receive" branches to the ?ERR* labels in "-check" and
-; in "-break".
+; break handler
 
-	.include "hisiocode-main.src"
-	.include "hisiocode-check.src"
-	.include "hisiocode-break.src"
-	.include "hisiocode-receive.src"
-	.include "hisiocode-cleanup.src"
-	.include "hisiocode-send.src"
-	.include "hisiocode-vbi.src"
-	.include "hisiocode-diag.src"
-
+?ERRBRK	LDA #RMBRK	; reset break interrupt flag
+	STA IRQEN
+	LDA POKMSK	; set default pokey interrupt mask
+	STA IRQEN
+	LDX STACKP
+	TXS
+?ABS73	JSR ?CLEANUP
+	LDY #ERRBRK	; set error code $80
+	STY STATUS
+?ABS74	JMP ?ENDCMD	; end command without retrying
