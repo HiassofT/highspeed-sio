@@ -27,6 +27,20 @@
 ; code in "-receive" branches to the ?ERR* labels in "-check" and
 ; in "-break".
 
+.if .def HISIO_MYPICODOS
+; optimized layout for MyPicoDos, starting at $092a
+	.include "hisiocode-main.src"
+	.include "hisiocode-vbi.src"
+	.include "hisiocode-check.src"
+	.include "hisiocode-break.src"
+	.include "hisiocode-receive.src"
+	.include "hisiocode-cleanup.src"
+	.include "hisiocode-send.src"
+	.include "hisiocode-diag.src"
+.else
+; standard layout, works for:
+; - highspeed SIO patch (fastnmi and fastvbi)
+; - relocatable code starting at $xx00
 	.include "hisiocode-main.src"
 	.include "hisiocode-check.src"
 	.include "hisiocode-break.src"
@@ -35,4 +49,5 @@
 	.include "hisiocode-send.src"
 	.include "hisiocode-vbi.src"
 	.include "hisiocode-diag.src"
+.endif
 

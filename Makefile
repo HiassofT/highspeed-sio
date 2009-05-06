@@ -4,9 +4,9 @@ all: hipatch.atr patchrom patchrom.exe \
  diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr diag-hias.atr
 
 ATASM=atasm
-#ATASMFLAGS=
+ATASMFLAGS=
 #ATASMFLAGS=-s
-ATASMFLAGS=-s -v
+#ATASMFLAGS=-s -v
 
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
