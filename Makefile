@@ -4,14 +4,19 @@ all: hipatch.atr patchrom patchrom.exe \
  diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr diag-hias.atr
 
 ATASM=atasm
-ATASMFLAGS=
+#ATASMFLAGS=
 #ATASMFLAGS=-s
-#ATASMFLAGS=-s -v
+ATASMFLAGS=-s -v
 
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
 
-HISIOSRC=hisio.src hisiocode.src hisiodet.src hisio.inc fastnmi.src
+HISIOSRC=hisio.src hisiodet.src hisio.inc fastnmi.src \
+	hisiocode.src \
+	hisiocode-break.src hisiocode-cleanup.src hisiocode-main.src \
+	hisiocode-send.src hisiocode-check.src hisiocode-diag.src \
+	hisiocode-receive.src hisiocode-vbi.src
+
 
 %.com: %.src
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
