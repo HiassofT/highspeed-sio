@@ -420,9 +420,9 @@ TPUP	.BYTE "patched powerup code",155
 .endif
 
 .if .def ROMABLE
-TTIT	.BYTE 155,"Highspeed SIO patch V1.18R",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.20R",155
 .else
-TTIT	.BYTE 155,"Highspeed SIO patch V1.18",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.20",155
 .endif
 	.BYTE "(c) 2009 by Matthias Reichl",155,155
 TTITL	= * - TTIT
