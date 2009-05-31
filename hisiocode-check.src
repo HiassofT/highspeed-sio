@@ -82,17 +82,17 @@
 ?ERR	STA STATUS
 
 .if .def DIAGSIO
-	STX ?DIAGX
+	STX ?DIAGX	; X register contains last received character
 	LDX ?DIAGER
-	STA ?DIAGE,X
+	STA ?DIAGE,X	; store status/error
 	LDA ?DIAGX
-	STA ?DIAGB2,X
+	STA ?DIAGB2,X	; store last received character
 	TYA
-	STA ?DIAGC,X
+	STA ?DIAGC,X	; current byte count
 	LDA ?DIAGST
-	STA ?DIAGS,X
+	STA ?DIAGS,X	; phase/stage
 	LDA ?DIAGBT
-	STA ?DIAGB,X
+	STA ?DIAGB,X	; last received ack/nack byte
 	INC ?DIAGER
 .endif
 
