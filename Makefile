@@ -3,7 +3,7 @@
 all: hipatch.atr patchrom patchrom.exe \
  diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr diag-hias.atr
 
-ATASM=atasm
+ATASM ?= atasm
 ATASMFLAGS=
 #ATASMFLAGS=-s
 #ATASMFLAGS=-s -v
