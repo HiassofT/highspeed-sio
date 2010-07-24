@@ -8,10 +8,22 @@ NOKEY=1
 ; ------------------------------------------------------------
 ; begin: my own testing parameters
 
+
+
+
 ; disable retries and fallback to standard speed
 ; (even in non-diag mode)
-DIAGNORET = 1
-DIAGTX = 1
+; DIAGNORET = 1
+; DIAGTX = 1
+; diag specific timing problems
+; DIAGTP = 1
+
+; identical to ext-nonmi, but no timer ticks
+DIAGSIO = 1
+DIAGTIM	= 1
+FASTVBI = 1
+FASTVBI_NOCLOCK = 1
+
 ; use immediate VBI ($222) instead of patching NMI handler
 ;FASTVBI = 1
 
@@ -44,13 +56,12 @@ DIAGTX = 1
 ; diag timing (out of highspeed code)
 ;DIAGTX = 1
 
-; diag specific timing problems
-DIAGTP = 1
 
 ; initial clock values
-CLK1 = $FF
-CLK2 = $FF
-CLK3 = $FF
+; CLK1 = $FF
+; CLK2 = $FF
+; CLK3 = $FF
+
 ; lcount value
 ;LCNT = $8E
 
