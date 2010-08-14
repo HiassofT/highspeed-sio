@@ -39,7 +39,7 @@
 	.include "hisiocode-diag.src"
 .else
 ; standard layout, works for:
-; - highspeed SIO patch (fastnmi and fastvbi)
+; - highspeed SIO patch
 ; - relocatable code starting at $xx00
 	.include "hisiocode-main.src"
 	.include "hisiocode-check.src"

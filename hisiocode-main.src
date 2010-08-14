@@ -64,14 +64,12 @@ DOHIDET	STA DRETRY
 
 .if .def FASTVBI
 ; save old immediate VBI handler
+?ABSF01	JSR ?CLRTIM1
 	LDA $222
 	PHA
 	LDA $223
 	PHA
-; install fast immediate VBI handler if pokey divisor is below 5
-?ABSF01	LDA SIOSPEED
-	CMP #5
-	BCS ?NOVBI
+; install fast immediate VBI handler
 .if .def RELOCTABLE
 ?ABSF02	LDY ?VBIADR
 ?ABSF03	LDX ?VBIADR+1

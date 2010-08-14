@@ -157,35 +157,6 @@ CHKKY4
 
 .endif
 
-.if .def PATCHNMI
-; check if we can patch the NMI handler
-	LDA $FFFA
-	CMP #$18
-	BNE CHKNMI1
-	LDA $FFFB
-	CMP #$C0
-	BEQ CHKNMI2
-
-CHKNMI1	PRINT 0, TNONMI
-	INC WARNING
-	JMP CHKNMI3
-
-CHKNMI2	LDA #0
-	STA $D40E
-	LDA #<PNMI
-	STA $FFFA
-	LDA #>PNMI
-	STA $FFFB
-	LDA #$40
-	STA $D40E
-
-	PRINT 0, TNMI
-
-CHKNMI3
-
-.endif
-
-
 .if .def PATCHRESET
 ; check if we can patch the powerup/reset code
 
@@ -409,22 +380,17 @@ TNOKEY	.BYTE "unknown ROM, not patching keyboard",155
 TKEY	.BYTE "patched keyboard IRQ handler",155
 .endif
 
-.if .def PATCHNMI
-TNONMI	.BYTE "unknown ROM, not patching NMI",155
-TNMI	.BYTE "patched NMI handler",155
-.endif
-
 .if .def PATCHRESET
 TNOPUP	.BYTE "unknown ROM, not patching powerup code",155
 TPUP	.BYTE "patched powerup code",155
 .endif
 
 .if .def ROMABLE
-TTIT	.BYTE 155,"Highspeed SIO patch V1.20R",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.30R",155
 .else
-TTIT	.BYTE 155,"Highspeed SIO patch V1.20",155
+TTIT	.BYTE 155,"Highspeed SIO patch V1.30",155
 .endif
-	.BYTE "(c) 2009 by Matthias Reichl",155,155
+	.BYTE "(c) 2010 by Matthias Reichl",155,155
 TTITL	= * - TTIT
 
 TISP	.BYTE "OS already patched",155
@@ -434,17 +400,9 @@ TPAT	.BYTE "patching OS",155
 PCODE	= *
 
 .if .def ROMABLE
-  .if .def PATCHNMI
-	.incbin "hipatch-code-rom-fastnmi.bin"
-  .else
 	.incbin "hipatch-code-rom-fastvbi.bin"
-  .endif
 .else
-  .if .def PATCHNMI
-	.incbin "hipatch-code-fastnmi.bin"
-  .else
 	.incbin "hipatch-code-fastvbi.bin"
-  .endif
 .endif
 
 .bank

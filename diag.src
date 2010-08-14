@@ -9,8 +9,6 @@ NOKEY=1
 ; begin: my own testing parameters
 
 
-
-
 ; disable retries and fallback to standard speed
 ; (even in non-diag mode)
 ; DIAGNORET = 1
@@ -18,11 +16,22 @@ NOKEY=1
 ; diag specific timing problems
 ; DIAGTP = 1
 
-; identical to ext-nonmi, but no timer ticks
-DIAGSIO = 1
-DIAGTIM	= 1
+DIAGNORET = 1
+DIAGTX = 1
+;DIAGSIO = 1
+;DIAGTIM	= 1
 FASTVBI = 1
-FASTVBI_NOCLOCK = 1
+
+DIAGTP = 1
+CLK1 = $FF
+CLK2 = $FF
+CLK3 = $FF
+LCNT = $80
+
+; use a fixed timout value, for worst-case testing
+FIXTOUT = $201
+
+;FASTVBI_NOCLOCK = 1
 
 ; use immediate VBI ($222) instead of patching NMI handler
 ;FASTVBI = 1
@@ -34,7 +43,7 @@ FASTVBI_NOCLOCK = 1
 ; DMADEF=$23 ; wide playfield
 ;DMADEF=$26 ; normal PF, missile DMA
 ;DMADEF=$36 ; normal PF, missile DMA, single line resolution
-; DMADEF=$2A ; normal PF, player DMA
+;DMADEF=$2A ; normal PF, player DMA
 
 ; SCREENOFF = 1
 
@@ -101,37 +110,18 @@ TBYT	= $100
 ; do timing tests with unmodified SIO code
 DIAGNORET = 1
 DIAGTX = 1
+FASTVBI = 1
 .endif
 
 .if SHIPDIAG=2
-; do timing tests with unmodified SIO code, use VBI code instead of NMI
-DIAGNORET = 1
-DIAGTX = 1
-FASTVBI = 1
-.endif
-
-.if SHIPDIAG=3
 ; test with all diags in SIO code
 DIAGSIO = 1
 DIAGTIM	= 1
-.endif
-
-.if SHIPDIAG=4
-; test with all diags in SIO code, use VBI code instead of NMI
-DIAGSIO = 1
-DIAGTIM	= 1
 FASTVBI = 1
 .endif
 
 .endif
 
-.if .not .def FASTVBI
-; patch OS for insane speeds
-INSANE	= 1
-.endif
-
-; use a fixed timout value, for worst-case testing
-FIXTOUT = $100
 
 	.include "cio.inc"
 	.include "hisio.inc"
@@ -180,22 +170,6 @@ DEFNMI	= $40
 RUN	LDA #0
 	STA $301
 	JSR HISIO ; clear speed table
-
-.if .def INSANE
-	LDA $D301
-	STA D301BAK
-	JSR ROMRAM
-	LDA #0
-	STA NMIEN
-
-	LDA #<FASTNMI
-	STA $FFFA
-	LDA #>FASTNMI
-	STA $FFFB
-
-	LDA #DEFNMI
-	STA NMIEN
-.endif
 
 .if .def USEDLI
 	LDA #0
@@ -416,10 +390,6 @@ TEND2	BPUT 0, TAGAL, TAGA
 
 NOBOOT2
 
-.if .def INSANE
-	LDA D301BAK
-	STA $D301
-.endif
 	JMP RUN
 
 
@@ -452,14 +422,6 @@ HEXTAB .BYTE "0123456789ABCDEF"
 TSTAMP	.DC 4 0
 .endif
 
-.if .def INSANE
-	.include "romram.src"
-.endif
-
-.if .def INSANE
-D301BAK	.BYTE 0
-.endif
-
 GETKEY  LDA $E425
 	PHA
 	LDA $E424
@@ -476,18 +438,12 @@ DLI	PHA
 .endif
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2009-05-03",155
+	.BYTE "highspeed SIO test 2010-08-14",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
-	.BYTE "basic test mode, patched NMI",155
-.endif
-.if SHIPDIAG = 2
 	.BYTE "basic test mode, fast VBI",155
 .endif
-.if SHIPDIAG = 3
-	.BYTE "extended test mode, patched NMI",155
-.endif
-.if SHIPDIAG = 4
+.if SHIPDIAG = 2
 	.BYTE "extended test mode, fast VBI",155
 .endif
 .else
@@ -531,14 +487,6 @@ SPEEDTB .DC 8 0
 
 	.include "hisiodet.src"
 	.include "hisiocode.src"
-
-.if .def INSANE
-	* = $2950
-
-	.include "fastnmi.src"
-.endif
-
-
 
 	.IF (*&127)<>0
 	.DC (128-(*&127)) 0

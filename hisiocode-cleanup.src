@@ -1,6 +1,6 @@
 ;  highsiocode-cleanup.src - highspeed SIO routine, cleanup at end of code
 ;
-;  Copyright (c) 2003-2009 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2010 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,22 @@
 	LDA #$3C	; clear command line
 	STA PBCTL
 
+.if .def FASTVBI
+?CLRTIM1	LDA #$FF
+	STA MYTIM1+1
+	RTS
+
+; set timeout: X=HI, A=LO
+?SMYTOUT
+	LDY #5
+	STA WSYNC
+?SMYW1	DEY
+	BNE ?SMYW1
+	STA MYTIM1
+	STX MYTIM1+1
+	RTS
+.else
+
 ; clear timer1
 ?CLRTIM1	LDY #$00
 
@@ -44,10 +60,12 @@
 	LDA #>?ERRTO
 	STA CDTMA1+1
 .endif
-	LDA #0
+.endif
 	RTS
 
+.if .not .def FASTVBI
 .if .def RELOCTABLE
 ?ERRTOA
 ?ABS67	.WORD ?ERRTO
+.endif
 .endif

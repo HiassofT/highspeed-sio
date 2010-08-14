@@ -1,6 +1,6 @@
 ;  highsiocode-vbi.src - highspeed SIO routine, optional fast VBI code
 ;
-;  Copyright (c) 2003-2009 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2010 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -28,25 +28,30 @@ VBICODE
 	INC 18
 .endif
 
-?NOC1	LDA CDTMV1	; check lo byte. if its != 0 timer is running and it must be decremented.
-	BNE ?TIDEC	; go decrement, hi byte unchanged because lo != 0
-	LDA CDTMV1+1	; this branch: lo = 0
-	BEQ ?TIEXIT	; timer is zero (disabled, expired), exit from here
-	DEC CDTMV1+1
-?TIDEC	DEC CDTMV1
-	BEQ ?TICHK	; lo reached 0, check if we hi also reached 0
-?TIEXIT	JMP $E462	; timer still running or expired
-?TICHK	LDA CDTMV1+1
-	BEQ ?RUNT1	; hi is also 0, execute timer vector
-	JMP $E462
+; fast implementation of system timer 1:
+; - jumps to ?ERRTO if it reaches 0
+; - no check if timer has already expired (just set MYTIM1+1 to $FF
+;   and it will run long enough before starting the timeout code)
+; - MYTIM1+1 has to be set to HIVAL+1, since timer starts at $0000 (not $FFFF).
 
-?RUNT1
-?ABSF04	JSR ?RUNT11
-	JMP $E462
-?RUNT11	JMP (CDTMA1)
+?NOC1	DEC MYTIM1
+	BNE ?NOTOUT
+	DEC MYTIM1+1
+	BEQ ?RUNTIM
 
-.if .def RELOCTABLE
-?VBIADR
-?ABSF05	.WORD VBICODE
-.endif
+?NOTOUT	
+;	JMP XITVBV
+
+;	NOP
+
+	PLA
+	TAY
+	PLA
+	TAX
+	PLA
+	RTI
+
+?RUNTIM
+?ABSF04	JMP ?ERRTO
+
 .endif

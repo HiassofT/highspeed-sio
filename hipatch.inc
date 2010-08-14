@@ -53,7 +53,7 @@ PSIO	= $CC30		; start of new highspeed code
 ; power-up code
 PUPCODE	= $C2B3		; this contains "LDA $033D"
 
-PNMI	= $CF68		; new NMI handler
+; PNMI	= $CF68		; new NMI handler
 
 .if .def PATCHKEY
 PKEY	= $CFB8		; new keyboard IRQ handler

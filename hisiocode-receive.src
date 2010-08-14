@@ -1,6 +1,6 @@
 ;  highsiocode-receive.src - highspeed SIO routine, receive byte/block code
 ;
-;  Copyright (c) 2003-2009 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2010 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -18,9 +18,8 @@
 
 
 ; NOTE: the code starting from "?GETLP" up to the last "BNE ?GETLP"
-; should ; not cross a page boundary, otherwise there's an increased
+; should not cross a page boundary, otherwise there's an increased
 ; chance for overruns at 126kbit/sec!
-
 
 ; note: pokey is already set to receive mode (in rdquit),
 ; so we don't need to do the setup again
@@ -28,14 +27,10 @@
 ?GETBLK	LDY #$00
 	STY CHKSUM
 
-; call GETBYTE with Y=$80 to receive a single byte
-
-?GETBYTE STY GETFLG
-
 ?GETLP	LDA #IMRECV
-?GETBY1	BIT IRQST
+?GETBY2	BIT IRQST
 	BPL ?ERRBRK	; break key pressed?
-	BNE ?GETBY1
+	BNE ?GETBY2
 	LDX SERIN
 	LDA #RMRECV	; reset data-receive IRQ bit
 	STA IRQEN
@@ -44,12 +39,9 @@
 	LDA #$20
 	BIT SKSTAT
 	STA SKREST
-	BPL ?ERRFRM	; framing error
-	BEQ ?ERROVR	; data input overrun
+?ERRFR1	BPL ?ERRFRM	; framing error
+?ERROV1	BEQ ?ERROVR	; data input overrun
 	TXA
-	BIT GETFLG
-	BMI ?DORTS
-
 	STA (BUFRLO),Y
 
 .if .not .def NOCKSUM
@@ -67,16 +59,35 @@
 	BNE ?GETLP
 	LDA BFENHI
 	BNE ?GETLP
-	LDY #$80
 ?ABS63	JSR ?GETBYTE
 
-.if .def DIAGSIO
-	STA ?DIAGBT
-.endif
 .if .not .def NOCKSUM
-	CMP CHKSUM
+	CPX CHKSUM
 	BEQ ?DORTS
 	LDA #ERRCHK
 ?ABS64	JMP ?ERR
 .endif
-?DORTS	RTS 
+?DORTS	RTS
+
+; receive a byte, returned in X
+?GETBYTE LDA #IMRECV
+?GETBY1	BIT IRQST
+	BPL ?ERRBRK	; break key pressed?
+	BNE ?GETBY1
+	LDX SERIN
+	LDA #RMRECV	; reset data-receive IRQ bit
+	STA IRQEN
+	LDA #MSKRECV	; enable data-receive IRQ
+	STA IRQEN
+	LDA #$20
+	BIT SKSTAT
+	STA SKREST
+	BPL ?ERRFR1	; framing error
+	BEQ ?ERROV1	; data input overrun
+
+.if .def DIAGSIO
+	STX ?DIAGBT
+.endif
+	RTS
+
+

@@ -1,7 +1,7 @@
 #all: hipatch.atr patchrom patchrom.exe
 
 all: hipatch.atr patchrom patchrom.exe \
- diag.atr diag-nonmi.atr diag-ext.atr diag-ext-nonmi.atr diag-hias.atr
+ diag.atr diag-ext.atr diag-hias.atr
 
 ATASM ?= atasm
 ATASMFLAGS=
@@ -11,7 +11,7 @@ ATASMFLAGS=
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
 
-HISIOSRC=hisio.src hisiodet.src hisio.inc fastnmi.src \
+HISIOSRC=hisio.src hisiodet.src hisio.inc \
 	hisiocode.src \
 	hisiocode-break.src hisiocode-cleanup.src hisiocode-main.src \
 	hisiocode-send.src hisiocode-check.src hisiocode-diag.src \
@@ -21,15 +21,9 @@ HISIOSRC=hisio.src hisiodet.src hisio.inc fastnmi.src \
 %.com: %.src
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
-COMS =	hisio.com hisiok.com hisiokn.com hision.com \
-	hisior.com hisiork.com hisiorkn.com hisiorn.com \
+COMS =	hisio.com hisiok.com \
+	hisior.com hisiork.com \
 	dumpos.com 
-
-hipatch-code-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -f0 -dFASTNMI=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
-
-hipatch-code-rom-fastnmi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -f0 -dFASTNMI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 hipatch-code-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
@@ -38,28 +32,16 @@ hipatch-code-rom-fastvbi.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
 
-hisio.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dPATCHKEY=1 -o$@ $<
-
-hisiok.com: hipatch.src hipatch-code-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -o$@ $<
-
-hision.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
+hisio.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -o$@ $<
 
-hisiokn.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
+hisiok.com: hipatch.src hipatch-code-fastvbi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
-hisior.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
-
-hisiork.com: hipatch.src hipatch-code-rom-fastnmi.bin hipatch.inc cio.inc
-	$(ATASM) $(ATASMFLAGS) -dPATCHNMI=1 -dROMABLE=1 -o$@ $<
-
-hisiorn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
+hisior.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -dPATCHKEY=1 -o$@ $<
 
-hisiorkn.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
+hisiork.com: hipatch.src hipatch-code-rom-fastvbi.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -o$@ $<
 
 
@@ -70,20 +52,14 @@ hisio-reloc.bin: $(HISIOSRC)
 hisio-reloc-fastvbi.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dRELOCTABLE=1 -dSTART=4096 -dFASTVBI=1 -o$@ hisio.src
 
-diag-hias.atr: diag.src $(HISIOSRC) fastnmi.src
+diag-hias.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -r -o$@ $<
 
-diag.atr: diag.src $(HISIOSRC) fastnmi.src
+diag.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=1 -r -o$@ $<
 
-diag-nonmi.atr: diag.src $(HISIOSRC) fastnmi.src
+diag-ext.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=2 -r -o$@ $<
-
-diag-ext.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=3 -r -o$@ $<
-
-diag-ext-nonmi.atr: diag.src $(HISIOSRC) fastnmi.src
-	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=4 -r -o$@ $<
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src
@@ -98,15 +74,12 @@ hipatch.atr: $(COMS)
 hicode-fastvbi.h: hipatch-code-rom-fastvbi.bin
 	xxd -i hipatch-code-rom-fastvbi.bin > hicode-fastvbi.h
 
-hicode-fastnmi.h: hipatch-code-rom-fastnmi.bin
-	xxd -i hipatch-code-rom-fastnmi.bin > hicode-fastnmi.h
-
-patchrom.o: patchrom.cpp patchrom.h hicode-fastnmi.h hicode-fastvbi.h
+patchrom.o: patchrom.cpp patchrom.h hicode-fastvbi.h
 
 patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
-patchrom.exe: patchrom.cpp patchrom.h hicode-fastnmi.h hicode-fastvbi.h
+patchrom.exe: patchrom.cpp patchrom.h hicode-fastvbi.h
 	i586-mingw32msvc-g++ $(CXXFLAGS) -o patchrom.exe patchrom.cpp
 	i586-mingw32msvc-strip patchrom.exe
 

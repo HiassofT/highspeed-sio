@@ -17,8 +17,14 @@
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 ?CHKST	
+.if .def FASTVBI
+	LDA #2
+	LDX #1
+?ABS68	JSR ?SMYTOUT
+.else
 	LDY #$02
 ?ABS68	JSR ?STIMOUT
+.endif
 	LDA #MSKRECV
 	STA IRQEN
 ?ABS69	JSR ?RDACK
@@ -30,7 +36,7 @@
 ?WAITCPL
 .if .def FIXTOUT
 	LDX #>FIXTOUT
-	LDY #<FIXTOUT
+	LDA #<FIXTOUT
 .else
 	LDA DTIMLO
 	ROR 
@@ -41,9 +47,18 @@
 	TYA 
 	ROR 
 	AND #$C0
-	TAY 
 .endif
+.if .def FASTVBI
+	INX	; hi value must be incremented, lo in A
+.else
+	TAY
+.endif
+
+.if .def FASTVBI
+?ABS70	JSR ?SMYTOUT
+.else
 ?ABS70	JSR ?STIMOU2
+.endif
 
 ; receive ACK/NAK, COMPLETE/ERROR
 
@@ -52,18 +67,13 @@
 	STA SKREST
 	LDA #$3C	; clear command line
 	STA PBCTL
-	LDY #$80
 ?ABS71	JSR ?GETBYTE
 
-.if .def DIAGSIO
-	STA ?DIAGBT
-.endif
-
-	CMP #'A		; ACK
+	CPX #'A		; ACK
 	BEQ ?RDOK
-?NOACK	CMP #'C		; COMPLETE
+?NOACK	CPX #'C		; COMPLETE
 	BEQ ?RDOK
-	CMP #'E		; command ERROR
+	CPX #'E		; command ERROR
 	BEQ ?RDERR
 
 ?ERRNAK LDA #ERRNAK	; NAK or any other error -> set code $8B

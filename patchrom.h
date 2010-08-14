@@ -38,13 +38,13 @@
 #define PKEYIRQ 0xCFB8
 
 /* address of NMI vector */
-#define NMIVEC 0xFFFA
+/* #define NMIVEC 0xFFFA */
 
 /* address of original NMI handler */
-#define XL_NMIHAN 0xC018
+/* #define XL_NMIHAN 0xC018 */
 
 /* address of new NMI code */
-#define PNMI 0xCF68
+/* #define PNMI 0xCF68 */
 
 /* address of powerup code containing "LDA $03B3" */
 #define XL_PUPCODE 0xC2B3

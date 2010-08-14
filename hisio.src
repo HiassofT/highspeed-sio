@@ -84,6 +84,10 @@
 ;    - speedup determining the highspeed mode (reduces time when
 ;      accessing a stock or non-existant drive for the first time)
 ;    - updated relocator table to include recent code changes
+;
+;  2010-08-14 Matthias Reichl
+;    - optimized fast VBI code, NMI patch is now obsolete (and removed)
+
 
 	.include "hisio.inc"
 
@@ -125,13 +129,13 @@ RELOC	.WORD ?ABS01+1, ?ABS02+1, ?ABS03+1, ?ABS04+1, ?ABS05+1
 .if .not .def NOCKSUM
 	.WORD ?ABS64+1
 .endif
-	.WORD ?ABS65+1, ?ABS66+1, ?ABS67, ?ABS68+1, ?ABS69+1
+	.WORD ?ABS65+1, ?ABS66+1, ?ABS68+1, ?ABS69+1
 	.WORD ?ABS70+1, ?ABS71+1, ?ABS72+1, ?ABS73+1, ?ABS74+1
 
 .if .def FASTVBI
-; note: ABSF05 must be WITHOUT +1!
 	.WORD ?ABSF01+1, ?ABSF02+1, ?ABSF03+1, ?ABSF04+1
-	.WORD ?ABSF05
+.else
+	.WORD ?ABS67
 .endif
 
 RLEN	.WORD *-RELOC

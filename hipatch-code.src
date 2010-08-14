@@ -26,6 +26,9 @@
 ;  2009-05-01 Matthias Reichl
 ;    - added coldstart/powerup patch: SHIFT+RESET does a coldstart
 ;    - rearranged memory layout to fit code into $CCxx
+;
+;  2010-08-14 Matthias Reichl
+;    - removed NMI patch (obsoleted by new fast VBI code)
 
 
 	.include "hisio.inc"
@@ -67,11 +70,6 @@ STDSIO	= PSTD
 	.include "hisiodet.src"
 	.include "hisiocode.src"
 
-.if .def FASTNMI
-	* = PNMI
-	.include "fastnmi.src"
-.endif
-
 .if .def PATCHKEY
 	* = PKEY
 
@@ -109,5 +107,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.20 090524"
+	.BYTE "Hias 1.30 100814"
 

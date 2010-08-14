@@ -1,6 +1,6 @@
-Highspeed SIO patch V1.20 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.30 for Atari XL/XE OS and MyIDE OS
 
-Copyright (c) 2006-2009 Matthias Reichl <hias@horus.com>
+Copyright (c) 2006-2010 Matthias Reichl <hias@horus.com>
 
 This program is proteced under the terms of the GNU General Public
 License, version 2. Please read LICENSE for further details.
@@ -45,14 +45,6 @@ other OS please drop me a line so I can include this information in
 future docs.
 
 
-IMPORTANT WARNING:
-
-The versions with the "fast NMI handler" always disable ATRACT mode
-when CRITIC is set (usually during SIO operations), the other
-versions disable ATRACT mode when running at speeds of 80kbit and
-higher. So don't blame me if you ruin your TV, I've warned you :-)
-
-
 2. How to use the patch
 
 You can either patch the currently active OS (which needs the RAM under
@@ -68,15 +60,11 @@ just use the "HISIO.COM" file. Otherwise have a look at the version
 table below that describes the different features:
 
 Filename                        Features
-               coldstart   hotkeys   fast NMI handler   ROM-able
-HISIO.COM      yes         yes       yes                no
-HISIOK.COM     yes         no        yes                no
-HISIOKN.COM    yes         no        no                 no
-HISION.COM     yes         yes       no                 no
-HISIOR.COM     yes         yes       yes                yes
-HISIORK.COM    yes         no        yes                yes
-HISIORKN.COM   yes         no        no                 yes
-HISIORN.COM    yes         yes       no                 yes
+               coldstart   hotkeys   ROM-able
+HISIO.COM      yes         yes       no
+HISIOK.COM     yes         no        no
+HISIOR.COM     yes         yes       yes
+HISIORK.COM    yes         no        yes
 
 Explanation of the features:
 
@@ -103,16 +91,6 @@ SHIFT+CONTROL+S    Clear SIO speed table and enable highspeed SIO
 SHIFT+CONTROL+N    Disable highspeed SIO (normal speed)
 SHIFT+CONTROL+H    Enable highspeed SIO
 SHIFT+CONTROL+DEL  Coldstart Atari
-
-* fast NMI handler:
-
-This installs a faster NMI handler so that the highest
-possible SIO speed (POKEY divisor 0, 126kbit/sec) works reliable.
-Without the patch only speeds up to 110kbit/sec (divisor 1) work
-reliable, 126kbit operation results in intermittant errors.
-
-The drawback is that some programs might not work correctly with
-the patched NMI handler (although I currently don't know of any).
 
 * ROM-able:
 
@@ -150,12 +128,11 @@ For example:
 
 patchrom -k xl.rom xlhi.rom
 
-To create a patched ROM without the fast NMI handler, use the
-"-n" option. To disable patching the powerup code (coldstart
-when pressing SHIFT+RESET), use the "-p" option. Of course you may
+To disable patching the powerup code (coldstart when pressing
+SHIFT+RESET), use the "-p" option. Of course you may
 also use two or more options at the same time. For example:
 
-patchrom -k -n -p xl.rom xlhi2.rom
+patchrom -k -p xl.rom xlhi2.rom
 
 Now you can use your EPROM burner to create a ROM replacement for
 your Atari.
@@ -219,12 +196,8 @@ Filename           SIO           RESET             Total lowmem
                 variables       handler        RAM ver.       ROM ver. 
 HISIO.COM      $CC00-$CC0D    $0100-$0112    $0100-$0112        n/a
 HISIOK.COM     $CC00-$CC0C    $0100-$0112    $0100-$0112        n/a
-HISIOKN.COM    $CC00-$CC0C    $0100-$0112    $0100-$0112        n/a
-HISION.COM     $CC00-$CC0D    $0100-$0112    $0100-$0112        n/a
 HISIOR.COM     $0100-$010D    $010E-$0120    $0100-$0120    $0100-$010D
 HISIORK.COM    $0100-$010C    $010D-$011F    $0100-$011F    $0100-$010C
-HISIORKN.COM   $0100-$010C    $010D-$011F    $0100-$0120    $0100-$010C
-HISIORN.COM    $0100-$010D    $010E-$0120    $0100-$011F    $0100-$010D
 
 The last two columns contain the total "standard" memory usage when
 using the software patch ("RAM ver.") and when installing a patched
@@ -297,7 +270,7 @@ this implementation doesn't use IRQs at all (note the "SEI" at the
 very beginning of the SIO code). The code is therefore significantly
 faster and can reliably operate at speeds up to ~80kbps (pokey divisor 4).
 Higher speeds (up to 126kbit/sec) are possible, too, but require
-a modified NMI (VBI) handler code. See below for more details.
+a modified VBI handler code. See below for more details.
 
 Note: I don't recommend using more than ~70kbps (pokey divisor 6)
 for "everyday operations". First of all, if you have several

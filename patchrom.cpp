@@ -24,7 +24,6 @@
 
 #include "patchrom.h"
 #include "hicode-fastvbi.h"
-#include "hicode-fastnmi.h"
 
 static unsigned char rombuf[ROMLEN];
 
@@ -63,15 +62,6 @@ static unsigned char new_keycode[keycode_len] = {
 	0x20, // JSR
 	PKEYIRQ & 0xff,
 	PKEYIRQ >> 8 };
-
-#define nmivec_len 2
-static unsigned char orig_nmivec[nmivec_len] = {
-	XL_NMIHAN & 0xff,
-	XL_NMIHAN >> 8 };
-
-static unsigned char new_nmivec[nmivec_len] = {
-	PNMI & 0xff,
-	PNMI >> 8 };
 
 #define powerupcode_len 3
 static unsigned char orig_powerupcode[powerupcode_len] = {
@@ -162,7 +152,6 @@ int main(int argc, char** argv)
 	bool need_csum_update;
 
 	bool patch_keyirq = true;
-	bool patch_nmi = true;
 	bool patch_powerup = true;
 
 	unsigned int sio_address;
@@ -175,7 +164,7 @@ int main(int argc, char** argv)
 	int idx = 1;
 	size_t read_len;
 
-	printf("patchrom V1.20 (c) 2006-2009 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.30 (c) 2006-2010 Matthias Reichl <hias@horus.com>\n");
 
 	if (argc < 2) {
 		goto usage;
@@ -183,11 +172,6 @@ int main(int argc, char** argv)
 
 	if (argv[idx][0] == '-' && argv[idx][1] == 'k') {
 		patch_keyirq = false;
-		idx++;
-	}
-
-	if (argv[idx][0] == '-' && argv[idx][1] == 'n') {
-		patch_nmi = false;
 		idx++;
 	}
 
@@ -247,10 +231,6 @@ int main(int argc, char** argv)
 		}
 	}
 	if (!is_xl) {
-		if (patch_nmi) {
-			printf("detected old OS, not patching NMI handler\n");
-			patch_nmi = false;
-		}
 		if (patch_powerup) {
 			printf("detected old OS, not patching powerup/reset code\n");
 			patch_powerup = false;
@@ -261,11 +241,7 @@ int main(int argc, char** argv)
 
 	// copy highspeed SIO code to ROM OS
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
-	if (patch_nmi) {
-		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_fastnmi_bin, hipatch_code_rom_fastnmi_bin_len);
-	} else {
-		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_fastvbi_bin, hipatch_code_rom_fastvbi_bin_len);
-	}
+	memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_fastvbi_bin, hipatch_code_rom_fastvbi_bin_len);
 
 	// copy old standard SIO code to highspeed SIO code
 	memcpy(rombuf + HISTDSIO - ROMBASE, rombuf + sio_address - ROMBASE, newcode_len);
@@ -283,16 +259,6 @@ int main(int argc, char** argv)
 			printf("patched keyboard IRQ handler\n");
 		} else {
 			printf("unknown OS, not patching keyboard IRQ handler\n");
-		}
-	}
-
-	// patch NMI handler
-	if (patch_nmi) {
-		if (memcmp(rombuf + NMIVEC -  ROMBASE, orig_nmivec, nmivec_len) == 0) {
-			memcpy(rombuf + NMIVEC -  ROMBASE, new_nmivec, nmivec_len);
-			printf("patched NMI handler\n");
-		} else {
-			printf("unknown OS, not patching NMI handler\n");
 		}
 	}
 
@@ -328,10 +294,9 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-k] [-n] [-p] original.rom new.rom\n");
+	printf("usage: patchrom [-k] [-p] original.rom new.rom\n");
 	printf("options:\n");
 	printf("  -k  don't patch keyboard IRQ handler\n");
-	printf("  -n  don't patch NMI handler\n");
 	printf("  -p  don't patch powerup/reset code\n");
 	return 1;
 }
