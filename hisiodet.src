@@ -61,9 +61,7 @@ HISIO
 
 ?ABS07	JSR ?DODET
 
-	; for testing happy 810 mode, uncomment this and connect a happy 1050
-	;LDY #$FF
-
+	; for testing happy 810 mode, change BMI into JMP and connect a happy 1050
 	BMI ?NOULTRA
 
 ?ABS08	LDA HIBUF
