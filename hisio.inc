@@ -43,10 +43,9 @@
 ; speed used by this SIO command (changed to standard for second retry)
 	MYSPEED = $3A
 
-.if .def FASTVBI
-; timer in ZP, decremented in fast VBI
+; timer in ZP, used by fast VBI code
 	MYTIM1 = $3B ; $3C
-.endif
+
 	STACKP = $318
 ;	STACKP = $3B
 
