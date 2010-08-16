@@ -24,11 +24,11 @@ DOHISIO
 ; record current timestamp
         LDA #0
         STA $D40E
-        LDA 18
+        LDA RTCLOK
         STA ?TSTAMP
-        LDA 19
+        LDA RTCLOK+1
         STA ?TSTAMP+1
-        LDA 20
+        LDA RTCLOK+2
         STA ?TSTAMP+2
         LDA $D40B
         STA ?TSTAMP+3
@@ -63,11 +63,11 @@ DOHIDET	STA DRETRY
 	STA CDEVIC
 
 .if .def FASTVBI
-; save old immediate VBI handler
 ?ABSF01	JSR ?CLRTIM1
-	LDA $222
+; save old immediate VBI handler
+	LDA VVBLKI
 	PHA
-	LDA $223
+	LDA VVBLKI+1
 	PHA
 ; install fast immediate VBI handler
 .if .def RELOCTABLE
@@ -77,9 +77,14 @@ DOHIDET	STA DRETRY
 	LDY #<VBICODE
 	LDX #>VBICODE
 .endif
-	LDA #6
-	JSR $E45C
-?NOVBI
+?ABSF04	JSR ?WTVBI
+	STY VVBLKI
+	STX VVBLKI+1
+
+; save mid RTCLOK byte for later adjustment of high byte
+	LDA RTCLOK+1
+	PHA
+
 .endif
 
 	TSX 
@@ -264,11 +269,22 @@ DOHIDET	STA DRETRY
 
 .if .def FASTVBI
 	PLA
+	STA CHKSUM	; save old RTCLOK mid byte
+	PLA
 	TAX
 	PLA
 	TAY
-	LDA #6
-	JSR $E45C
+?ABSF05	JSR ?WTVBI
+	STY VVBLKI
+	STX VVBLKI+1
+
+; now check for mid-counter wrap-around:
+; if new value is smaller than old value, a wrap around occurred
+	LDA RTCLOK+1
+	CMP CHKSUM
+	BCS ?NOWRAP	; larger or equal, no wrap around
+	INC RTCLOK	; smaller, increment hi-counter
+?NOWRAP
 .endif
 
 	LDA #0

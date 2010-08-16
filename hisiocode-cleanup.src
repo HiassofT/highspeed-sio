@@ -29,15 +29,22 @@
 	STA MYTIM1+1
 	RTS
 
-; set timeout: X=HI, A=LO
+; set timeout: X=HI, Y=LO
 ?SMYTOUT
-	LDY #5
-	STA WSYNC
-?SMYW1	DEY
-	BNE ?SMYW1
-	STA MYTIM1
+?ABSF06	JSR ?WTVBI
+	STY MYTIM1
 	STX MYTIM1+1
 	RTS
+
+; similar to SETVBV: waste 22 cpu cycles after STA WSYNC
+; so that the VBI code can be executed
+?WTVBI	STA WSYNC
+	BIT STACKP	; 4 cycles
+	BIT STACKP	; 4 cycles
+	BIT STACKP	; 4 cycles
+	BIT STACKP	; 4 cycles
+	RTS		; 6 cycles
+
 .else
 
 ; clear timer1
@@ -60,8 +67,8 @@
 	LDA #>?ERRTO
 	STA CDTMA1+1
 .endif
-.endif
 	RTS
+.endif
 
 .if .not .def FASTVBI
 .if .def RELOCTABLE

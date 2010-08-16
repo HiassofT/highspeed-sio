@@ -18,7 +18,7 @@
 
 ?CHKST	
 .if .def FASTVBI
-	LDA #2
+	LDY #2
 	LDX #1
 ?ABS68	JSR ?SMYTOUT
 .else
@@ -36,7 +36,7 @@
 ?WAITCPL
 .if .def FIXTOUT
 	LDX #>FIXTOUT
-	LDA #<FIXTOUT
+	LDY #<FIXTOUT
 .else
 	LDA DTIMLO
 	ROR 
@@ -47,14 +47,10 @@
 	TYA 
 	ROR 
 	AND #$C0
-.endif
-.if .def FASTVBI
-	INX	; hi value must be incremented, lo in A
-.else
 	TAY
 .endif
-
 .if .def FASTVBI
+	INX	; hi value must be incremented
 ?ABS70	JSR ?SMYTOUT
 .else
 ?ABS70	JSR ?STIMOU2
@@ -67,13 +63,18 @@
 	STA SKREST
 	LDA #$3C	; clear command line
 	STA PBCTL
-?ABS71	JSR ?GETBYTE
+?ABS71	SEC
+	JSR ?GETBYT
 
-	CPX #'A		; ACK
+.if .def DIAGSIO
+	STA ?DIAGBT
+.endif
+
+	CMP #'A		; ACK
 	BEQ ?RDOK
-?NOACK	CPX #'C		; COMPLETE
+?NOACK	CMP #'C		; COMPLETE
 	BEQ ?RDOK
-	CPX #'E		; command ERROR
+	CMP #'E		; command ERROR
 	BEQ ?RDERR
 
 ?ERRNAK LDA #ERRNAK	; NAK or any other error -> set code $8B

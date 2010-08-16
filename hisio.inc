@@ -19,6 +19,8 @@
 
 	POKMSK = $10
 
+	RTCLOK = $12
+
 	STATUS = $30
 	CHKSUM = $31
 	BUFRLO = $32
@@ -55,7 +57,7 @@
 	CRITIC = $42
 
 	CDTMV1 = $218
-	
+	VVBLKI = $222
 	CDTMA1 = $226
 	CDEVIC = $23A
 	CCOMND = $23B
@@ -119,6 +121,7 @@
 
 	PBCTL = $D303
 	WSYNC = $D40A
+	VCOUNT = $D40B
 
 	SETVBV = $E45C
 	XITVBV = $E462

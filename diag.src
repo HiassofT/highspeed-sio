@@ -26,7 +26,14 @@ DIAGTP = 1
 CLK1 = $FF
 CLK2 = $FF
 CLK3 = $FF
-LCNT = $80
+
+;LCNT = $56	; causes timeout with 94 NMI cycles
+;DELCNT = 5
+
+;LCNT = $56
+;LCNT = $85
+;LCNT = $15
+;LCNT1 = 1 ; add one "STA WSYNC"
 
 ; use a fixed timout value, for worst-case testing
 FIXTOUT = $201
@@ -74,7 +81,7 @@ FIXTOUT = $201
 ; lcount value
 ;LCNT = $8E
 
-; short additional delay loop
+; short additional delay loop: DELCNT*5-1 cycles
 ;DELCNT = 80
 
 DRIVENO = 2
@@ -158,6 +165,10 @@ DEFNMI	= $40
 	.WORD START
 	.WORD XRTS
        
+	LDA #MSKRECV
+	STA $A0
+	STA $0600
+
 	LDA #0
 	STA 580
 	LDA #2
@@ -256,6 +267,12 @@ NOBOOT	LDA #TCMD
 	LDA #>BUF
 	STA DBUFHI
 
+; reset run-counter
+	LDA #0
+	STA RUNCNT
+	STA RUNCNT+1
+	STA RUNCNT+2
+
 .if .def DMADEF
 	LDA #DMADEF
 	STA 559
@@ -271,6 +288,13 @@ TLOOP0
 TLOOP	LDA 53279
 	CMP #6
 	BEQ TLOOP
+
+	INC RUNCNT
+	BNE RUN1
+	INC RUNCNT+1
+	BNE RUN1
+	INC RUNCNT+2
+RUN1
 
 	LDA #TDIR
 	STA $303
@@ -297,13 +321,15 @@ CLRLP	STA BUF,Y
 
 ; now wait for the right screen line
 .if .def LCNT
-?WTLC1	LDA $D40B
-	CMP #LCNT-1
+	LDX #LCNT-1
+?WTLC1	CPX VCOUNT
 	BNE ?WTLC1
-?WTLC2	STA $D40A
-	LDA $D40B
-	CMP #LCNT
+	INX
+?WTLC2	CPX VCOUNT
 	BNE ?WTLC2
+.if .def LCNT1
+	STA WSYNC
+.endif
 .endif
 
 .if .def DELCNT
@@ -359,6 +385,16 @@ TEND	LDA #$22
 	LDA #DEFNMI
 	STA NMIEN
 
+	BPUT 0, TRUNL, TRUN
+	LDA RUNCNT+2
+	JSR PHEX
+	LDA RUNCNT+1
+	JSR PHEX
+	LDA RUNCNT
+	JSR PHEX
+	LDA #155
+	JSR PUTCHR
+
 .if .def DIAGTX
 	LDA TSTAMP
 	JSR PHEX
@@ -395,7 +431,6 @@ NOBOOT2
 
 XRTS	RTS
 
-.if .def DIAGTX
 PHEX	PHA
         LSR
         LSR
@@ -420,7 +455,6 @@ PUTCHR	TAY
 HEXTAB .BYTE "0123456789ABCDEF"
 
 TSTAMP	.DC 4 0
-.endif
 
 GETKEY  LDA $E425
 	PHA
@@ -438,7 +472,7 @@ DLI	PHA
 .endif
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2010-08-14",155
+	.BYTE "highspeed SIO test 2010-08-15",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
 	.BYTE "basic test mode, fast VBI",155
@@ -469,6 +503,11 @@ MLEN	= * - MTXT
 TAGA	.BYTE 155, "press ESC to reboot or any",155
 	.BYTE "other key to restart test",155
 TAGAL	= * - TAGA
+
+TRUN	.BYTE "runs: "
+TRUNL	= * - TRUN
+
+RUNCNT	.BYTE 0,0,0
 
 ; assemble highspeed code at identical page-boundaries as hipatch code
 

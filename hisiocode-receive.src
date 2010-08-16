@@ -27,7 +27,8 @@
 ?GETBLK	LDY #$00
 	STY CHKSUM
 
-?GETLP	LDA #IMRECV
+?GETLP	CLC		; C=0 means receive block, C=1 receive single byte
+?GETBYT LDA #IMRECV
 ?GETBY2	BIT IRQST
 	BPL ?ERRBRK	; break key pressed?
 	BNE ?GETBY2
@@ -35,13 +36,14 @@
 	LDA #RMRECV	; reset data-receive IRQ bit
 	STA IRQEN
 	LDA #MSKRECV	; enable data-receive IRQ
+	;LDA $A0
 	STA IRQEN
 	LDA #$20
 	BIT SKSTAT
-	STA SKREST
 ?ERRFR1	BPL ?ERRFRM	; framing error
 ?ERROV1	BEQ ?ERROVR	; data input overrun
 	TXA
+	BCS ?DORTS
 	STA (BUFRLO),Y
 
 .if .not .def NOCKSUM
@@ -59,35 +61,17 @@
 	BNE ?GETLP
 	LDA BFENHI
 	BNE ?GETLP
-?ABS63	JSR ?GETBYTE
+?ABS63	SEC
+	JSR ?GETBYT
+
+.if .def DIAGSIO
+	STA ?DIAGBT
+.endif
 
 .if .not .def NOCKSUM
-	CPX CHKSUM
+	CMP CHKSUM
 	BEQ ?DORTS
 	LDA #ERRCHK
 ?ABS64	JMP ?ERR
 .endif
 ?DORTS	RTS
-
-; receive a byte, returned in X
-?GETBYTE LDA #IMRECV
-?GETBY1	BIT IRQST
-	BPL ?ERRBRK	; break key pressed?
-	BNE ?GETBY1
-	LDX SERIN
-	LDA #RMRECV	; reset data-receive IRQ bit
-	STA IRQEN
-	LDA #MSKRECV	; enable data-receive IRQ
-	STA IRQEN
-	LDA #$20
-	BIT SKSTAT
-	STA SKREST
-	BPL ?ERRFR1	; framing error
-	BEQ ?ERROV1	; data input overrun
-
-.if .def DIAGSIO
-	STX ?DIAGBT
-.endif
-	RTS
-
-

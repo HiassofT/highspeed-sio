@@ -21,11 +21,16 @@
 
 VBICODE 
 .if .not .def FASTVBI_NOCLOCK
-	INC 20
+	INC RTCLOK+2
 	BNE ?NOC1
-	INC 19
-	BNE ?NOC1
-	INC 18
+	INC RTCLOK+1
+
+; note: RTCLOK is handeled in hisiocode-main by checking RTCLOK+1 wrap-around
+; this saves 7 cycles in worst case
+;	BNE ?NOC1
+;	INC 18
+
+?NOC1
 .endif
 
 ; fast implementation of system timer 1:
@@ -34,15 +39,16 @@ VBICODE
 ;   and it will run long enough before starting the timeout code)
 ; - MYTIM1+1 has to be set to HIVAL+1, since timer starts at $0000 (not $FFFF).
 
-?NOC1	DEC MYTIM1
+	DEC MYTIM1
 	BNE ?NOTOUT
 	DEC MYTIM1+1
-	BEQ ?RUNTIM
+
+	BEQ ?RUNTIM	; timer reached 0, start timeout code
 
 ?NOTOUT	
-;	JMP XITVBV
-
-;	NOP
+; note: to save 6 additional cycles we don't use "JMP XITVBV" here
+; but implement the OS code directly. This code is identical in all
+; OS versions I know of.
 
 	PLA
 	TAY
@@ -51,7 +57,8 @@ VBICODE
 	PLA
 	RTI
 
+; jump to timeout code
 ?RUNTIM
-?ABSF04	JMP ?ERRTO
+?ABSF07	JMP ?ERRTO
 
 .endif
