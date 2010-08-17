@@ -400,9 +400,9 @@ TPAT	.BYTE "patching OS",155
 PCODE	= *
 
 .if .def ROMABLE
-	.incbin "hipatch-code-rom-fastvbi.bin"
+	.incbin "hipatch-code-rom.bin"
 .else
-	.incbin "hipatch-code-fastvbi.bin"
+	.incbin "hipatch-code.bin"
 .endif
 
 .bank

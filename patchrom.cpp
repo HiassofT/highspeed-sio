@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "patchrom.h"
-#include "hicode-fastvbi.h"
+#include "hicode.h"
 
 static unsigned char rombuf[ROMLEN];
 
@@ -241,7 +241,7 @@ int main(int argc, char** argv)
 
 	// copy highspeed SIO code to ROM OS
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
-	memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_fastvbi_bin, hipatch_code_rom_fastvbi_bin_len);
+	memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_bin, hipatch_code_rom_bin_len);
 
 	// copy old standard SIO code to highspeed SIO code
 	memcpy(rombuf + HISTDSIO - ROMBASE, rombuf + sio_address - ROMBASE, newcode_len);

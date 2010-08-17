@@ -81,9 +81,11 @@ DOHIDET	STA DRETRY
 	STY VVBLKI
 	STX VVBLKI+1
 
+.if .not .def FASTVBI_NOCLOCK
 ; save mid RTCLOK byte for later adjustment of high byte
 	LDA RTCLOK+1
 	PHA
+.endif
 
 .endif
 
@@ -268,8 +270,10 @@ DOHIDET	STA DRETRY
 ?ENDCMD	
 
 .if .def FASTVBI
+.if .not .def FASTVBI_NOCLOCK
 	PLA
 	STA CHKSUM	; save old RTCLOK mid byte
+.endif
 	PLA
 	TAX
 	PLA
@@ -278,6 +282,7 @@ DOHIDET	STA DRETRY
 	STY VVBLKI
 	STX VVBLKI+1
 
+.if .not .def FASTVBI_NOCLOCK
 ; now check for mid-counter wrap-around:
 ; if new value is smaller than old value, a wrap around occurred
 	LDA RTCLOK+1
@@ -285,6 +290,7 @@ DOHIDET	STA DRETRY
 	BCS ?NOWRAP	; larger or equal, no wrap around
 	INC RTCLOK	; smaller, increment hi-counter
 ?NOWRAP
+.endif
 .endif
 
 	LDA #0
