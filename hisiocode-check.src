@@ -63,8 +63,8 @@
 	STA SKREST
 	LDA #$3C	; clear command line
 	STA PBCTL
-?ABS71	SEC
-	JSR ?GETBYT
+	SEC
+?ABS71	JSR ?GETBYT
 
 .if .def DIAGSIO
 	STA ?DIAGBT

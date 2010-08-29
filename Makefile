@@ -77,7 +77,7 @@ patchrom.exe: patchrom.cpp patchrom.h hicode.h
 
 atarisio: atarisio-highsio.bin
 
-atarisio-highsio.bin: hisio.src hisio.inc hisiocode.src hisiodet.src
+atarisio-highsio.bin: hisio.src hisio.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dRELOCTABLE -dSTART=4096 -o$@ $<
 
 clean:
