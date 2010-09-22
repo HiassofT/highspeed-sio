@@ -194,10 +194,10 @@ Here's an overview of the memory usage of the various versions:
 
 Filename           SIO           RESET             Total lowmem
                 variables       handler        RAM ver.       ROM ver. 
-HISIO.COM      $CC00-$CC0D    $0100-$0112    $0100-$0112        n/a
-HISIOK.COM     $CC00-$CC0C    $0100-$0112    $0100-$0112        n/a
-HISIOR.COM     $0100-$010D    $010E-$0120    $0100-$0120    $0100-$010D
-HISIORK.COM    $0100-$010C    $010D-$011F    $0100-$011F    $0100-$010C
+HISIO.COM      $CC00-$CC0D    $0108-$011A    $0108-$011A        n/a
+HISIOK.COM     $CC00-$CC0C    $0108-$011A    $0108-$011A        n/a
+HISIOR.COM     $0108-$0115    $0116-$0128    $0108-$0128    $0108-$0115
+HISIORK.COM    $0108-$0114    $0115-$0127    $0108-$0127    $0108-$0114
 
 The last two columns contain the total "standard" memory usage when
 using the software patch ("RAM ver.") and when installing a patched

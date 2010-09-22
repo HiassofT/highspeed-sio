@@ -21,7 +21,7 @@
 HIPATCH = 1
 
 .if .def ROMABLE
-  RAMBUF = $0100
+  RAMBUF = $0108	; leave the first 8 bytes at page 1 free, some programs use them
 .else
   RAMBUF = $CC00
 .endif
@@ -41,7 +41,7 @@ SPEEDTB	= RAMBUF+1	; 8-byte table for drive speeds
 .if .def ROMABLE
   RESETAD = HIBUF+4	; after end of highspeed SIO data
 .else
-  RESETAD = $0100	; at beginning of page 1
+  RESETAD = $0108	; (almost) at beginning of page 1
 .endif
 
 PDEST	= $CC00		; starting address of code patch
