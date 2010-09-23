@@ -1,7 +1,7 @@
 /*
    patchrom - patch existing ROM file with highspeed SIO code
 
-   (c) 2006 by Matthias Reichl <hias@horus.com>
+   (c) 2006-2010 by Matthias Reichl <hias@horus.com>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

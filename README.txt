@@ -98,7 +98,7 @@ This means you can dump the patched OS to a
 file (using "DUMPOS.COM") and then program the OS ROM-dump
 into an EPROM and install it into your Atari.
 The drawback is that the ROM-able versions use slightly more
-memory at the beginning of the stack area ($0100).
+memory at the beginning of the stack area ($0108).
 
 If you want to burn a replacement ROM and install it into your Atari
 you first need to create a patched ROM. Currently there are two methods
@@ -134,7 +134,7 @@ also use two or more options at the same time. For example:
 
 patchrom -k -p xl.rom xlhi2.rom
 
-Now you can use your EPROM burner to create a ROM replacement for
+Now you can use your EPROM programmer to create a ROM replacement for
 your Atari.
 
 
@@ -153,7 +153,7 @@ In the next step the patch checks if the currently running OS already
 uses the RAM under the OS ROM (for example if you are using the MyIDE
 soft OS from the MyIDE Flashcart). If this is not the case, the current
 OS ROM is copied to the RAM and a reset handler is installed at the
-beginning of the stack area ($100).
+beginning of the stack area ($108).
 
 At last the OS in the RAM is patched and the highspeed SIO code is
 installed at $CC00-$CFFF. Please note: this memory region is originally
@@ -181,7 +181,7 @@ to enable/disable the highspeed SIO code at all.
 
 The "RAM versions" of the patch (HISIO, HISION) use the memory locations
 at $CC0x for there variables, the ROM-able versions use memory locations
-at the beginning of the stack area ($010x) for these variables. In addition
+at the beginning of the stack area ($01xx) for these variables. In addition
 to these locations the patch needs some more bytes to make the software
 patch reset-proof. This reset routine is placed at the beginning of
 the stack area and called via CASINI ($2/$3). Of course this reset-routine
@@ -404,95 +404,41 @@ was pressed, the OS recognizes the mismatch, thinks the Atari was
 just powered up and do a coldstart initialization.
 
 
-Why is it necessary to patch the NMI handler?
+Why is it necessary to patch the VBI handler?
 
 Short answer: well, because it's too slow :-)
 
-The original NMI (actually: the VBI) handler needs too many CPU cycles.
-At every VBI (50 or 60 times per second) it is executed and this may
-result in a byte being missed (aka: overrun). At "normal" SIO speeds
-this is not a problem, even the "highspeed" transfer rate of disk drives
-(up to approx. 80kbit/sec) is fine. But at 92kbit/sec (pokey divisor 3)
+The original VBI handler needs too many CPU cycles. At every VBI
+(50 or 60 times per second) it is executed and this may result in a
+byte being missed (aka: overrun). At "normal" SIO speeds this is not
+a problem, even the "highspeed" transfer rate of disk drives (up to
+approx. 80kbit/sec) is fine. But at 92kbit/sec (pokey divisor 3)
 problems start.
 
-The highspeed SIO patches use two different approaches to solve this
-problem. To better understand how these approaches work it's necessary
-to know how the OS handles NMIs (VBIs in particular):
+The highspeed SIO code uses a simple approach which works with
+all currently available OSes:
 
-At the very beginning the OS checks if it was a DLI, if yes it jumps
-to the DLI code (vector at $0200).
+During SIO it installs an immediate VBI handler (in $0222/$0223)
+which handles SIO timeouts (using timeout counters in the zeropage,
+to save cycles) and increments RTCLOK ($14, $13 - overflows of
+$13 and incrementing $12 is handled outside of the VBI handler,
+again to save some cycles). Then it exits NMI processing with
+a "PLA TAY PLA TAX PLA RTI" sequence.
 
-Then it saves all registers and invokes the immediate VBI handler
-(vector at $0222).
+In the worst case (all counters overflowing) the immediate VBI
+handler code needs 48 CPU cycles (best case is 38 cycles).
+With the NMI/OS overhead of 38 cycles (stock XL OS) or 45 cycles
+("old" rev. A OS) the maximum delay is 93 CPU cycles.
 
-The immediate VBI handler ends with a JMP $E45F which run's the OS's
-immediate VBI code. This code increments the system clock ($12..$14),
-handles ATRACT mode, and handles the first system timer (used by the
-SIO code for timeout handling). At the end it checks if the CRITIC
-flag is set. If it is not set, the deferred VBI handler is executed
-(vector at $0224), which ends with a JMP $E462. If the critic bit
-is set (or if an IRQ is pending) the deferred VBI handler is not
-called but instead the VBI is ended with a JMP $E462.
+After SIO is finished the original immediate VBI handler
+is restored, of course.
 
-The last stage of the VBI code (executed through the JMP $E462) now
-restores all registers and ends the NMI with an "RTI" instruction.
-
-When analyzing the OS code I realized that handling of ATRACT mode
-and the first system timer could be optimized for speed. So the first
-approach was quite simple:
-
-Install an immediate VBI handler that implements the code of the
-OS's immediate handler, but faster, and then do a JMP $E462 to end
-the VBI. Actually, the current implementation first checks if the
-CRITIC flag is set. If it's clear the immediate VBI handler exits
-immediately with a JMP $E45F and the standard OS immediate handler
-is used. Only if the CRITIC flag is set (during SIO operations), the
-faster VBI handler is used.
-
-To avoid compatibility problems this immediate VBI handler is only
-installed if the speed is higher than 80kbit and replaced by the
-previously installed immediate VBI handler at the end of each SIO
-operation.
-
-This first approach has several benefits:
-- SIO operations run fine up to 110kbit
-- Patching of the OS is not needed, therefore 110kbit is even possible
-  when using the highspeed SIO code in applications (for example
-  in MyPicoDos), and these applications even work with the old
-  OS rev. A/B
-
-To reliably get 126kbit/sec another approach is needed:
-
-Saving all the registers onto the stack and jumping through
-the immediate VBI handler vector needs too much time - we have
-a maximum of 140 (actually 141, but that's another story) CPU cycles
-available for each byte. So every cycle counts.
-
-So the second approach replaces the very first stage of the
-original NMI handler with it's own, faster code.
-
-Like the original code it first checks if the NMI was caused
-by a DLI and in this case runs the DLI handler.
-
-Otherwise it only saves the A register to the stack and checks the
-CRITIC flag. If it's clear, it saves all other registers onto the
-stack and starts the immediate VBI handler (vector $0222), like the
-original OS code. The only difference here is that the new code needs
-5 more cycles (for checking CRITIC) before the original $0222 vector
-is run.
-
-If CRITIC is set, the code continues incrementing the system clock and
-checking the first system timer. If the system timer reaches zero, the
-X and Y registers are also saved onto the stack and the system timer
-vector is called. Since the system timer vector is only used to handle
-timeouts (which is an error condition), this means we saved several
-cycles (storing/restoring the X and Y registers) in case of normal
-operations.
-
-These change was enough to make reliable 126kbit transmission
-possible. Well, OK, the SIO code also had to be optimized a little bit,
-otherwise it would not work if ANTIC DMA was enabled. But after optimizing
-the SIO code, this scheme works very well :-)
+The only thing missing in the VBI code, compared to the
+original OS VBI code is handling ATRACT mode. So, in theory,
+it might be possible that running a long-copy session for
+several hours may result in an image burned into the CRT.
+Although this risk is not too high you have been warned,
+so use this patch at your own risk.
 
 Please note: At 126kbit/sec the Atari is extremely close to it's limit.
 At standard "GRAPHICS 0" mode Antic steals a lot of cycles, but there
@@ -502,6 +448,9 @@ many cycles and the CPU cannot handle the rate anymore. Other Antic
 display modes (even "GRAPHICS 8") leave more cycles to the CPU so
 it is not too critical. Graphics 0 is really one of the worst cases
 (together with the multicolor text mode, Graphics 12).
+
+Using DLI code (especially with a "STA WSYNC") during SIO may also
+lead to transmission errors / overruns.
 
 
 4. Some really nasty details about POKEY noone seemed to have noticed before:
@@ -515,61 +464,54 @@ after each transmitted byte (by transmitting 2 stopbits instead of 1),
 I could get closer to the 126kbit limit (at 110kbit nominal speed wasn't
 a problem).
 
-So I did some quite sophisticated tests: Using a small CPLD I built my
-own serial transmitter, clocked by PHI2 and I wrote some VHDL code that
-allowed me to transmit arbitrary bit sequences and even adjust the length
-of each individual bit.
+I ran a number of tests and discovered several interesting things:
 
-At 126kbit, transmitting a continuous stream of 10 bits of 14 PHI2 cycles
-each, I noticed that POKEY received the first byte fine, but got errors
-on the second (and all following bytes). When analyzing the received bytes
-it was clear that POKEY somehow missed the start bit and then synchronized
-on the next high->low transition within the bitstream (using this transition
-as the new "start" bit). Of course, depending on the bitstream this could
-result in a framing error - when the "stopbit" was 0 instead of 1.
+At divisor 0 a byte has to be at least 141 cycles long (expected length
+was 10*14=140 cycles), otherwise Pokey doesn't recognize the start
+bit of the following byte (and sync on the next hi->lo transition instead).
 
-I then "streched" the stopbit and discovered that transmission was fine
-if I stretched it by just one cycle - 15 instead of 14 cycles.
+I also expected that Pokey samples the bits at cycle 7 or 8 (of 14),
+but actually it samples at cycle 12 (of 14). This explains why there's
+(almost) no headroom for faster transmission speeds.
 
-I did some more testing, stretching other bits (for example the start
-bit or one of the data bits) by a single PHI2 cycle and this also worked.
+If the first received byte was exactly 141 cycles long, some very
+interesting things happen: Pokey samples the second byte at cycle
+5 (of 14) and also the reception is signalled in IRQST 7 cycles earlier.
+This means, the time between 2 received bytes is only 134 cycles,
+not 141 cycles.
 
-So I found the reason why adding a stopbit worked fine, but I still had
-to solve one mystery - why is +1% speed acceptable at divisor 8, but
-not at divisor 1?
+If the first byte was 141 cycles long, the second byte (plus all following
+bytes) may be 134 cycles long and Pokey still receives them fine. So, in
+theory, it would be possible to slightly "overclock" serial transmission.
+But this isn't very practicable, the sender has to be synchronized with
+the Atari clock, once a byte isn't exactly 134 cycles long the next byte
+must be (at least) 141 cycles long.
 
-I had the theory that POKEY might not sample the input signal at the
-middle of the bit but maybe a little bit later. This would explain why
-lower nominal speeds work but higher speeds don't.
+Several other tests showed that the latest time to enable serial input
+IRQ is the cycle immediately before Pokey signals the receipt in IRQST.
 
-So my goal was to discover where exactly POKEY samples the input signal.
-Using my CPLD I had all I needed to run an experiment:
+This means, the code has to read the received byte, disable serial input
+IRQ (to acknowledge the receipt) and re-enable the serial input IRQ
+within 134 cycles, otherwise the next byte is missed.
 
-I transmitted the byte $31 and then reduced the length of bit 0 and at
-the same time stretched the length of bit 1. The total transmission time
-still was the same, and once POKEY receives $30 instead of $31 I know
-the exact sampling time.
+During my tests I was wondering why a (worst case) 133 cycle long code
+worked, but a (calculated) 134 cycle long code resulted in very rare
+transmission errors - actually 134 cycles should be fine.
 
-If bit 0 was 14, 13 or 12 cycles in length, transmission was fine,
-POKEY received a $31. But it bit 1 was 11 (or less) cycles long, POKEY
-received a $31. So this means POKEY samples at the 12th cycle.
+I dug a little bit deeper into this and ran into a very interesting
+"feature" of the 6502 CPU which wasn't documented before (although
+I later found out some other people ran into this before):
 
-Actually, I had expected that POKEY samples on the 7th (or 8th) cycle,
-not at the 12th cycle - which means a shift of 5 (or 4) cycles from
-the center).
+If the CPU finishes a 3-cycle taken branch instruction
+(to the same page) just before the NMI handler would normally be
+started, NMI execution is delayed by another full instruction.
 
-Then I was interested if this shift was some absolute value or relative
-to speed, so I ran further tests: at divisor 1 POKEY samples at cycle
-13 (instead of 8), at divisor 40 it samples at cycle 52 (instead of 47).
+This had the consequence that my worst-case calculation was shifted
+by a single cycle and the (calculated) 134 cycle long code caught another
+refresh cycle was actually 135 cycles long.
 
-To double check these results I ran some other tests: instead of changing
-the length of bit 0/1, I changed the length of bit 7 and the stopbit.
-If bit 7 was too short, POKEY would sample the stopbit instead, resulting
-in a received $B1 instead of $31. The results were identical to the
-previous tests - all sampling occurs 5 cycles after the expected time.
+Fortunately, the worst case critical path of the highspeed SIO code
+is only 133 cycles, this was nothing I had to worry about, but
+investigating this was a lot of fun :-)
 
-Although I know have some explanations for the transmission problems,
-I still don't know what's exactly going wrong inside POKEY. If someone
-has some more information, a theory, or even explanation, please
-contact me. I'd be very interested in any details!
 
