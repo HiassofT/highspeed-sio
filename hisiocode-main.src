@@ -110,6 +110,8 @@ DOHIDET	STA DRETRY
 	STA CCOMND
 
 	LDX MYSPEED
+
+.if .not .def USONLY
 	BPL ?NOTUR
 
 	LDA CAUX2
@@ -121,11 +123,18 @@ DOHIDET	STA DRETRY
 	BEQ ?WARP
 	CPX #XFFLG	; XF551?
 	BEQ ?XFCMD
+.endif
 	CPX #$0A	; check for happy 1050 speed
 	BNE ?CRETLP
 
 ; the happy 1050 doesn't like the $48 happy command in highspeed...
 	CMP #$48
+
+.if .def USONLY
+	BNE ?CRETLP
+	LDA #STDSPD
+	STA MYSPEED
+.else
 	BEQ ?DOSLOW
 	BNE ?CRETLP
 
@@ -147,6 +156,7 @@ DOHIDET	STA DRETRY
 	BNE ?DOSLOW
 ?WARP1	ORA #$20
 	STA CCOMND
+.endif
 
 ?CRETLP	
 
@@ -158,9 +168,11 @@ DOHIDET	STA DRETRY
 .endif
 
 	LDA MYSPEED
+.if .not .def USONLY
 	CMP #$40
 	BCC ?DOSIO2
 	LDA #STDSPD
+.endif
 ?DOSIO2	STA AUDF3
 	LDA #$34	; set command line
 	STA PBCTL
@@ -187,12 +199,13 @@ DOHIDET	STA DRETRY
 ; transmit command frame
 ?ABS51	JSR ?SENDBLK
 
+.if .not .def USONLY
 	BIT MYSPEED
 	BPL ?NOTUR1	; 1050 Turbo?
 	LDA #TURSPD	; yes, set highspeed before receiving ACK/NAK
 	STA AUDF3
-
 ?NOTUR1	
+.endif
 
 ?ABS52	JSR ?CHKST	; read command frame ACK/NAK
 ?ABS53	JSR ?CLRTIM1	; got ACK, clear timer
@@ -202,13 +215,15 @@ DOHIDET	STA DRETRY
 	INC ?DIAGST
 .endif
 
+.if .not .def USONLY
 	BIT MYSPEED
 	BVC ?NOXF	; XF551 / Happy Warp?
 
 	LDA #XFSPD	; yes, set highspeed before DATA
 	STA AUDF3
-
-?NOXF	LDA #1
+?NOXF
+.endif
+	LDA #1
 	STA CRETRY	; no more command-frame retries
 	LDA DBUFLO
 	STA BUFRLO

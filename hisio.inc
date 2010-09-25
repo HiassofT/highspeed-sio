@@ -125,11 +125,15 @@
 	SETVBV = $E45C
 	XITVBV = $E462
 
+.if .not .def USONLY
 	TURSPD = 6
 	XFSPD = 16
+.endif
 	STDSPD = $28
 
+.if .not .def USONLY
 	TURFLG = $80
 	XFFLG = $40
 	HAPFLG = $41
+.endif
 

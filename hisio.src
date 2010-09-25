@@ -117,8 +117,15 @@ SPEEDTB .DC 8 0
 ; note: ABS21 must be WITHOUT +1!
 RELOC	.WORD ?ABS01+1, ?ABS02+1, ?ABS03+1, ?ABS04+1, ?ABS05+1
 	.WORD ?ABS06+1, ?ABS07+1, ?ABS08+1, ?ABS09+1, ?ABS10+1
-	.WORD ?ABS11+1, ?ABS12+1, ?ABS13+1, ?ABS14+1, ?ABS15+1
-	.WORD ?ABS16+1, ?ABS17+1, ?ABS18+1, ?ABS19+1, ?ABS20+1
+	.WORD ?ABS11+1
+.if .not .def USONLY
+	.WORD ?ABS12+1, ?ABS13+1, ?ABS14+1, ?ABS15+1, ?ABS16+1
+.endif
+	.WORD ?ABS17+1
+.if .not .def USONLY
+	.WORD ?ABS18+1
+.endif
+	.WORD ?ABS19+1, ?ABS20+1
 	.WORD ?ABS21
 ; absolute addresses from hisiocode:
 ; note: ABS67 must be WITHOUT +1!

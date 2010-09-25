@@ -76,7 +76,9 @@ HISIO
 ?ABS10	LDA HIBUF
 ?ABS11	JMP ?SETSP2
 
-?NOULTRA LDA #TURFLG	; Turbo 1050?
+?NOULTRA 
+.if .not .def USONLY
+	LDA #TURFLG	; Turbo 1050?
 ?ABS12	JSR ?GETST
 	BPL ?SETSPD
 
@@ -88,16 +90,19 @@ HISIO
 ?ABS14	STA SIOSPEED
 ?ABS15	JSR ?CHKHAP
 	BPL ?SETSPD
+.endif
 
 	LDA #STDSPD	; no, just use standard SIO speed
 	BNE ?SETSP2
 
+.if .not .def USONLY
 ?GETST
 ?ABS16	STA SIOSPEED
 	LDA #4
 	STA DBYTLO
 	LDX #$53
 	LDA #$40
+.endif
 ?DOIMM	STX DCOMND
 	STA DSTATS
 ?DODET	LDA #1
@@ -108,8 +113,11 @@ HISIO
 	LDA #0
 	BEQ ?DOIMM
 
+.if .not .def USONLY
 ?SETSPD
 ?ABS18	LDA SIOSPEED
+.endif
+
 ?SETSP2	LDX DUNIT
 	CLC		; add 1 to value to prevent endless loop
 	ADC #1		; if device sends a speed byte of 0

@@ -75,9 +75,13 @@ patchrom.exe: patchrom.cpp patchrom.h hicode.h
 	i586-mingw32msvc-g++ $(CXXFLAGS) -o patchrom.exe patchrom.cpp
 	i586-mingw32msvc-strip patchrom.exe
 
-atarisio: atarisio-highsio.bin
+atarisio: atarisio-highsio.bin atarisio-highsio-all.bin
 
+# build with ultraspeed only support
 atarisio-highsio.bin: hisio.src hisio.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -dUSONLY -dFASTVBI -dRELOCTABLE -dSTART=4096 -o$@ $<
+
+atarisio-highsio-all.bin: hisio.src hisio.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dRELOCTABLE -dSTART=4096 -o$@ $<
 
 clean:
