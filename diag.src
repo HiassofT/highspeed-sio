@@ -22,10 +22,10 @@ DIAGTX = 1
 ;DIAGTIM	= 1
 FASTVBI = 1
 
-DIAGTP = 1
-CLK1 = $FF
-CLK2 = $FF
-CLK3 = $FF
+;DIAGTP = 1
+;CLK1 = $FF
+;CLK2 = $FF
+;CLK3 = $FF
 
 ;LCNT = $56	; causes timeout with 94 NMI cycles
 ;DELCNT = 5
@@ -36,7 +36,7 @@ CLK3 = $FF
 ;LCNT1 = 1 ; add one "STA WSYNC"
 
 ; use a fixed timout value, for worst-case testing
-FIXTOUT = $201
+;FIXTOUT = $201
 
 ;FASTVBI_NOCLOCK = 1
 
@@ -86,11 +86,14 @@ FIXTOUT = $201
 
 DRIVENO = 2
 
-TCMD	= 'R
-TDIR	= $40
+;TCMD	= 'R
+;TDIR	= $40
 
-;TCMD	= 'P
-;TDIR	= $80
+TCMD	= 'P
+TDIR	= $80
+
+; store random data in buffer
+RNDBUF	= 1
 
 ;TBYT	= $80
 TBYT	= $100
@@ -133,8 +136,8 @@ FASTVBI = 1
 	.include "cio.inc"
 	.include "hisio.inc"
 
-START	= $2000
-BUF	= $3000
+START	= $1000
+BUF	= $0800
 
 TMPVEC	= $E0
 
@@ -306,6 +309,14 @@ RUN1
 	LDA #0
 	TAY
 CLRLP	STA BUF,Y
+	INY
+	BNE CLRLP
+.endif
+
+.if .def RNDBUFBUF
+	LDY #0
+CLRLP	LDA $D20A
+	STA BUF,Y
 	INY
 	BNE CLRLP
 .endif
@@ -522,7 +533,7 @@ SPEEDTB .DC 8 0
 	.DC 19 0
 	.DC 21 0
 
-	* = $2335
+	* = $1335
 
 	.include "hisiodet.src"
 	.include "hisiocode.src"
