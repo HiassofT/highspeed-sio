@@ -220,7 +220,7 @@ $E971 code isn't reached at all.
 The highspeed SIO patch checks if the code at $E971 matches the one
 of the original XL OS and replaces the first 4 bytes with a
 "NOP" and a "JMP $CC30". The original code ("TSX" and "STX $0318")
-is copied to $CC10, followed by a "JMP $E974".
+is copied to $CC10, followed by a "JMP $E975".
 
 The highspeed SIO code at $CC30 first checks if a drive (from
 D1: to D8:) is to be accessed. If not, it jumps to $CC10 and thus
