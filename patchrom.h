@@ -46,7 +46,7 @@
 /* address of new NMI code */
 /* #define PNMI 0xCF68 */
 
-/* address of powerup code containing "LDA $03B3" */
+/* address of powerup code containing "LDA $033D" */
 #define XL_PUPCODE 0xC2B3
 
 /* address of new, patched powerup/reset code */
