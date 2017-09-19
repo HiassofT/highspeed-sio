@@ -1,0 +1,9 @@
+**/*.atr
+**/*.com
+**/*.bin
+**/*.o
+**/*.exe
+
+patchdisk/
+patchrom
+hicode.h
