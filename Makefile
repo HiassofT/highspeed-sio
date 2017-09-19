@@ -11,6 +11,9 @@ ATASMFLAGS=
 CFLAGS = -W -Wall -g
 CXXFLAGS = -W -Wall -g
 
+MINGW_CXX=i686-w64-mingw32-g++
+MINGW_STRIP=i686-w64-mingw32-strip
+
 HISIOSRC=hisio.src hisiodet.src hisio.inc \
 	hisiocode.src \
 	hisiocode-break.src hisiocode-cleanup.src hisiocode-main.src \
@@ -72,8 +75,8 @@ patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
 patchrom.exe: patchrom.cpp patchrom.h hicode.h
-	i586-mingw32msvc-g++ $(CXXFLAGS) -o patchrom.exe patchrom.cpp
-	i586-mingw32msvc-strip patchrom.exe
+	$(MINGW_CXX) $(CXXFLAGS) -o patchrom.exe patchrom.cpp
+	$(MINGW_STRIP) patchrom.exe
 
 atarisio: atarisio-highsio.bin atarisio-highsio-all.bin
 
