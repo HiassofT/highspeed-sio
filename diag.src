@@ -480,16 +480,34 @@ DLI	PHA
 .endif
 
 MTXT	.BYTE 125
-	.BYTE "highspeed SIO test 2010-08-15",155
+	.BYTE "highspeed SIO test 2018-10-30",155
 .if .def SHIPDIAG
 .if SHIPDIAG = 1
-	.BYTE "basic test mode, fast VBI",155
+	.BYTE "basic "
+.if .def DIAG_WRITE
+	.BYTE "write "
+.else
+	.BYTE "read "
+.endif
+	.BYTE "test, fast VBI",155
 .endif
 .if SHIPDIAG = 2
-	.BYTE "extended test mode, fast VBI",155
+	.BYTE "extended "
+.if .def DIAG_WRITE
+	.BYTE "write "
+.else
+	.BYTE "read "
+.endif
+	.BYTE "test, fast VBI",155
 .endif
 .else
-	.BYTE "custom debug mode",155
+	.BYTE "custom "
+.if .def DIAG_WRITE
+	.BYTE "write "
+.else
+	.BYTE "read "
+.endif
+	.BYTE "test",155
 .endif
 .if .def NOKEY
 	.BYTE 155, "testing "
