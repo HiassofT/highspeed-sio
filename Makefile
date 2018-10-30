@@ -1,7 +1,7 @@
 #all: hipatch.atr patchrom patchrom.exe
 
 all: hipatch.atr patchrom patchrom.exe \
- diag.atr diag-ext.atr diag-hias.atr \
+ diag-read.atr diag-ext-read.atr diag-hias-read.atr \
  diag-write.atr diag-ext-write.atr diag-hias-write.atr
 
 ATASM ?= atasm
@@ -48,13 +48,13 @@ hisior.com: hipatch.src hipatch-code-rom.bin hipatch.inc cio.inc
 hisiork.com: hipatch.src hipatch-code-rom.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dROMABLE=1 -o$@ $<
 
-diag-hias.atr: diag.src $(HISIOSRC)
+diag-hias-read.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -r -o$@ $<
 
-diag.atr: diag.src $(HISIOSRC)
+diag-read.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=1 -r -o$@ $<
 
-diag-ext.atr: diag.src $(HISIOSRC)
+diag-ext-read.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=2 -r -o$@ $<
 
 diag-write.atr: diag.src $(HISIOSRC)
