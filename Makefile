@@ -1,7 +1,8 @@
 #all: hipatch.atr patchrom patchrom.exe
 
 all: hipatch.atr patchrom patchrom.exe \
- diag.atr diag-ext.atr diag-hias.atr
+ diag.atr diag-ext.atr diag-hias.atr \
+ diag-write.atr diag-ext-write.atr diag-hias-write.atr
 
 ATASM ?= atasm
 ATASMFLAGS=
@@ -55,6 +56,16 @@ diag.atr: diag.src $(HISIOSRC)
 
 diag-ext.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=2 -r -o$@ $<
+
+diag-write.atr: diag.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=1 -dDIAG_WRITE=1 -r -o$@ $<
+
+diag-ext-write.atr: diag.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -f0 -dSHIPDIAG=2 -dDIAG_WRITE=1 -r -o$@ $<
+
+diag-hias-write.atr: diag.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -f0 -dDIAG_WRITE=1 -r -o$@ $<
+
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src
