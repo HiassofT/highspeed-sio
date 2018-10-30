@@ -6,6 +6,7 @@ NOKEY=1
 .if .def DIAG_WRITE
 TCMD	= 'P
 TDIR	= $80
+RNDBUF	= 1
 .else
 TCMD	= 'R
 TDIR	= $40
@@ -95,7 +96,7 @@ FASTVBI = 1
 DRIVENO = 2
 
 ; store random data in buffer
-RNDBUF	= 1
+;RNDBUF	= 1
 
 ;TBYT	= $80
 TBYT	= $100
@@ -309,7 +310,7 @@ CLRLP	STA BUF,Y
 	BNE CLRLP
 .endif
 
-.if .def RNDBUFBUF
+.if .def RNDBUF
 	LDY #0
 CLRLP	LDA $D20A
 	STA BUF,Y
