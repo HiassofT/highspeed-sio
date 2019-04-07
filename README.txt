@@ -52,6 +52,13 @@ the OS ROM) by running one of the "HISIO*.COM" files or install a
 patched OS ROM into your Atari (which doesn't use the RAM under the
 OS ROM and therefore also works with Turbo Basic and SpartaDos).
 
+As an alternative you can boot hisioboot.atr or hisioboot-atarisio.atr.
+They patch the currently active OS and then allow a disk to be booted.
+hisioboot-atarisio.atr executes a "exchange D1: with D2:" AtariSIO
+command and if it succeeds will immediately continue the boot process.
+This allows for easy "chain-booting" the highspeed SIO patch by loading
+hisioboot-atarisio.atr in D1: and the ATR file to boot in D2:.
+
 The files "HISIO*.COM" and "DUMPOS.COM" can be found in the ZIP as
 separate files and also in the included "hipatch.atr".
 
