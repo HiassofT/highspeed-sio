@@ -3,7 +3,7 @@
 all: hipatch.atr patchrom patchrom.exe \
  diag-read.atr diag-ext-read.atr diag-hias-read.atr \
  diag-write.atr diag-ext-write.atr diag-hias-write.atr \
- hisioboot.atr
+ hisioboot.atr hisioboot-atarisio.atr
 
 ATASM ?= atasm
 ATASMFLAGS=
@@ -51,6 +51,9 @@ hisiork.com: hipatch.src hipatch-code-rom.bin hipatch.inc cio.inc
 
 hisioboot.atr: hipatch.src hipatch-code.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -dATRBOOT=1 -r -o$@ $<
+
+hisioboot-atarisio.atr: hipatch.src hipatch-code.bin hipatch.inc cio.inc atarisio.src
+	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -dATRBOOT=1 -dATARISIO_SWAP=1 -r -o$@ $<
 
 diag-hias-read.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -r -o$@ $<

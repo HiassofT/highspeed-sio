@@ -12,7 +12,7 @@ mkdir -p dist/tmp/src
 mkdir -p dist/tmp/diag
 
 cp Makefile *.src *.inc *.cpp *.h dist/tmp/src
-cp README.txt LICENSE hipatch.atr hisioboot.atr patchrom.exe hisio*.com dumpos.com dist/tmp
+cp README.txt LICENSE hipatch.atr hisioboot.atr hisioboot-atarisio.atr patchrom.exe hisio*.com dumpos.com dist/tmp
 
 cp diag-read.atr diag-ext-read.atr diag-write.atr diag-ext-write.atr dist/tmp/diag
 

@@ -227,6 +227,10 @@ WARNING	.BYTE 0
 
 	.include "romram.src"
 
+.if .def ATARISIO_SWAP
+	.include "atarisio.src"
+.endif
+
 ; reset routine: 
 RESET	LDA $D20F
 	AND #8
@@ -240,6 +244,10 @@ RESETL	= * - RESET
 
 EXIT
 .if .def ATRBOOT
+.if .def ATARISIO_SWAP
+	JSR SWAP_DRIVES
+	BCC EXITX
+.endif
 	BPUT 0, TBOOTL, TBOOT
 WCONSOL
 	LDA $D01F
@@ -247,6 +255,8 @@ WCONSOL
 	BNE WCONSOL
 	LDA #155
 	JSR PUTCHR
+
+EXITX
 	LDA #<ORG
 	STA TMPVEC
 	LDA #>ORG
