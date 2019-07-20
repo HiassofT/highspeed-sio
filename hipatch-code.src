@@ -59,6 +59,10 @@ STDSIO	= PSTD
 	LDA HIENAB
 	BNE STDSIO
 .endif
+
+.if .def BT
+	.include "hisiodetbt.src"
+.else
 	LDA DDEVIC
 	CMP #$31
 	BNE STDSIO
@@ -68,6 +72,8 @@ STDSIO	= PSTD
 	BCS STDSIO
 
 	.include "hisiodet.src"
+.endif
+
 	.include "hisiocode.src"
 
 .if .def PATCHKEY

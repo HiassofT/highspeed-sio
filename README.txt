@@ -129,8 +129,13 @@ want to create a patched ROM named "hi43i.rom" simply type:
 
 patchrom myide43i.rom hi43i.rom
 
-To create a patched ROM file without the keyboard IRQ handler, use
-the "-k" option (this has to be the first option passed to patchrom).
+To create a patched ROM file with SIO2BT support, use the "-b" option.
+For example:
+
+patchrom -b xl.rom xlhibt.rom
+
+To create a patched ROM file without the keyboard IRQ handler,
+use the "-k" option.
 For example:
 
 patchrom -k xl.rom xlhi.rom
@@ -231,7 +236,8 @@ is copied to $CC10, followed by a "JMP $E975".
 
 The highspeed SIO code at $CC30 first checks if a drive (from
 D1: to D8:) is to be accessed. If not, it jumps to $CC10 and thus
-uses the standard OS code.
+uses the standard OS code. This test is skipped if you patched
+with SIO2BT support. In this case there is no fallback to standard OS code.
 
 If you look at the source code, you'll notice that it is divided
 into 2 parts: hisiodet.src and hisiocode.src. The first one is the
@@ -243,6 +249,15 @@ At the very beginning, hisiodet.src checks if the highspeed SIO table
 (SPEEDTB) entry of the current drive (DUNIT) is zero. If yes, the drive
 hasn't been accessed before and therefore it's necessary to determine
 which type of highspeed SIO to use.
+With SIO2BT support the SPEEDTB is devided into two 4 bytes tables,
+one storing HS indexes and one storing CDEVIC IDs, but the idea is the same.
+If no HS Index is available for the current device, it has to be determined.
+
+With SIO2BT support, the code first tries to send a $53 command (get status)
+with HS Index = $08 (57600 Baud). If any answer comes (positive or NAK),
+we are done, otherwise we try with $28 (19200). No answer at all means that
+no device is connected, so the SIO request is ended with NAK,
+otherwise we continue with highspeed detection.
 
 First, the code tries to send a $3F command (get speed byte) to the
 drive. All ultra-speed capable devices support this command and will
@@ -277,6 +292,9 @@ If this command succeeded, a $41 is stored in the speed table.
 If none of the highspeed SIO variants worked, the SIO detection code
 assumes it is a stock drive that only operates at standard SIO speed
 and stores a $28 (pokey divisor for ~19kbps) in the speed table.
+The speed table stores information about up to 4 recently accessed devices.
+Older entries are overwritten and such device would be rechecked,
+when accessed again.
 
 Once the SIO speed and type has been determined, only the code in
 hisiocode.src is used.

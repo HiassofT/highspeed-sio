@@ -29,6 +29,12 @@ HIPATCH = 1
 SIOSPEED = RAMBUF	; speed byte for current operation
 SPEEDTB	= RAMBUF+1	; 8-byte table for drive speeds
 
+.if .def BT
+SPEEDTBSIZE = 4     ; SPEEDTB size, table for device speeds has only 4-bytes (when BT defined)!
+BT576K = $08        ; HS Index for 57.600 Baud
+DEVICETB = RAMBUF+5	; 4-byte table for last accessed devices
+.endif
+
 .if .def PATCHKEY
   ; add a config byte to enable/disable highspeed SIO with keyboard
   HIENAB = RAMBUF+9
@@ -37,9 +43,17 @@ SPEEDTB	= RAMBUF+1	; 8-byte table for drive speeds
   HIBUF = RAMBUF+9	; .. RAMBUF+12
 .endif
 
+.if .def BT
+NEXTSPEEDSLOT = HIBUF+4
+.endif
+
 ; address of reset handler
 .if .def ROMABLE
-  RESETAD = HIBUF+4	; after end of highspeed SIO data
+    .if .def BT
+      RESETAD = NEXTSPEEDSLOT+1
+    .else
+      RESETAD = HIBUF+4	; after end of highspeed SIO data
+    .endif
 .else
   RESETAD = $0108	; (almost) at beginning of page 1
 .endif

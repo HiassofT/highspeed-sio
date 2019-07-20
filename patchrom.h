@@ -51,3 +51,6 @@
 
 /* address of new, patched powerup/reset code */
 #define PUPCODE 0xCC18
+
+/* address of PHR routine (Perform Peripheral Handler Loading Initialization) */
+#define PHR 0xE739
