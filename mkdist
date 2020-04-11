@@ -8,16 +8,16 @@ fi
 NAME=hipatch-$VER
 
 rm -rf dist/tmp
-mkdir -p dist/tmp/src
-mkdir -p dist/tmp/diag
+mkdir -p "dist/tmp/${NAME}/src"
+mkdir -p "dist/tmp/${NAME}/diag"
 
-cp Makefile *.src *.inc *.cpp *.h dist/tmp/src
-cp README.txt LICENSE hipatch.atr hisioboot.atr hisioboot-atarisio.atr patchrom.exe hisio*.com dumpos.com dist/tmp
+cp Makefile *.src *.inc *.cpp *.h "dist/tmp/${NAME}/src"
+cp README.txt LICENSE hipatch.atr hisioboot.atr hisioboot-atarisio.atr patchrom.exe hisio*.com dumpos.com "dist/tmp/${NAME}"
 
-cp diag-read.atr diag-ext-read.atr diag-write.atr diag-ext-write.atr dist/tmp/diag
+cp diag-read.atr diag-ext-read.atr diag-write.atr diag-ext-write.atr "dist/tmp/${NAME}/diag"
 
 cd dist/tmp
-zip -r ../$NAME.zip *
+zip -r ../$NAME.zip "${NAME}"
 cd ..
 
 rm -rf tmp
