@@ -107,5 +107,5 @@ PKEYX	PLA
 .endif
 
 	* = PVER
-	.BYTE "Hias 1.30 100923"
+	.BYTE "Hias 1.31 200411"
 

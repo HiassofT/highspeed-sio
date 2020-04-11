@@ -1,7 +1,7 @@
 /*
    patchrom - patch existing ROM file with highspeed SIO code
 
-   (c) 2006-2010 by Matthias Reichl <hias@horus.com>
+   (c) 2006-2020 by Matthias Reichl <hias@horus.com>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 	int idx = 1;
 	size_t read_len;
 
-	printf("patchrom V1.30 (c) 2006-2010 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.31 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
 
 	if (argc < 2) {
 		goto usage;
