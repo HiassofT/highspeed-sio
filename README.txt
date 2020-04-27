@@ -282,6 +282,43 @@ Once the SIO speed and type as been determined, only the code in
 hisiocode.src is used.
 
 
+Official locations and entry points:
+
+$CFFF0-$CFFF: Highspeed Patch signature and version info
+
+These locations contain a 16-byte ASCII string in the format
+"Hias V.ER YYMMDD" where V.ER is the decimal version number
+(eg 1.32) and YYMMDD the date of the last code change.
+
+To detect presence of the highspeed SIO patch it's recommended
+to verify that "Hias " (including the blank) is present in
+$CFF0-$CFF4 and $CFF5-$CFF8 contain a valid decimal number.
+The date of the last code change is provided only for informational
+purposes.
+
+$CFED: direct entry to highspeed SIO code (since version 1.32)
+
+Note: highspeed patch versions before 1.32 don't contain this entry
+point so make sure you verify the version before using it!
+
+This entry point works like the standard JSR $E459 SIO call with
+the exception that you need to pass in the highspeed SIO mode in
+the A register. Highspeed SIO detection, as it's normally done
+for D1:-D8: drives (DDEVIC=§31, DUNIT=1-8) by the highspeed SIO
+code is bypassed and any device/unit number may be specified.
+
+A values from $00-$3F select the POKEY divisor.
+
+Other values as listed in hisio.inc (eg XFFLG / $40 for XF551 mode,
+HAPFLG / $41 for Happy Warp mode, TURFLG / $80 for 1050 Turbo mode)
+are only guaranteed to work in 1.xx versions of the highspeed SIO patch
+and might change in the future. If you want to use this modes
+verify that the version is >= 1.32 and < 2.00.
+
+Note: The highspeed SIO code doesn't support cassette devices / FSK
+mode and will send standard SIO command frames if DDEVIC is set to $60.
+
+
 Implementation of the highspeed SIO code:
 
 Compared to the original SIO code (which is completely IRQ driven)
