@@ -395,7 +395,7 @@ Implementation of the keyboard IRQ patch:
 
 The keyboard IRQ patch hooks into the IRQ handler at $FC20. The original
 code contains a "LDA $D209" at this location, which is then replaced
-by a "JMP $CFB8", the new keyboard hook. The new code reads the current
+by a "JMP $CFB7", the new keyboard hook. The new code reads the current
 keyboard code (again, a "LDA $D209") and then checks if it matches one
 of the special keystrokes. In any case the keyboard code read is preserved
 and then passed on to the original IRQ handler. The end of the new

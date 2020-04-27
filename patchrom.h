@@ -35,7 +35,7 @@
 #define OLD_KEYIRQ 0xFFBE
 
 /* address of new, patched IRQ code */
-#define PKEYIRQ 0xCFB8
+#define PKEYIRQ 0xCFB7
 
 /* address of NMI vector */
 /* #define NMIVEC 0xFFFA */

@@ -56,7 +56,7 @@ PUPCODE	= $C2B3		; this contains "LDA $033D"
 ; PNMI	= $CF68		; new NMI handler
 
 .if .def PATCHKEY
-PKEY	= $CFB8		; new keyboard IRQ handler
+PKEY	= $CFB7		; new keyboard IRQ handler
 
 KEYIRQ  = $FC20 	; this contains "LDA $D209"
 .endif
