@@ -61,5 +61,6 @@ PKEY	= $CFB7		; new keyboard IRQ handler
 KEYIRQ  = $FC20 	; this contains "LDA $D209"
 .endif
 
-
+PHISIO	= $CFED		; direct entry to hisio code
+			; A needs to be set to highspeed mode/divisor
 PVER = $CFF0		; 16 bytes version string

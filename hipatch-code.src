@@ -106,6 +106,9 @@ PKEYX	PLA
 	RTS
 .endif
 
+	* = PHISIO
+	JMP DOHIENTRY
+
 	* = PVER
 	.BYTE "Hias 1.31 200411"
 

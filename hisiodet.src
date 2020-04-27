@@ -40,6 +40,7 @@ HISIO
 
 	SEC		; bytes in SIO table are now speed+1
 	SBC #1		; to prevent endless loop in case device sends speed byte 0
+DOHIENTRY
 ?ABS03	STA SIOSPEED
 ?ABS04	JMP DOHISIO
 
