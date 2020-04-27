@@ -467,7 +467,7 @@ TTIT
 .else
 	.BYTE 155
 .endif
-	.BYTE "Highspeed SIO patch V1.31R",155
+	.BYTE "Highspeed SIO patch V1.32R",155
 .else
 TTIT
 .if .def ATRBOOT
@@ -475,7 +475,7 @@ TTIT
 .else
 	.BYTE 155
 .endif
-	.BYTE "Highspeed SIO patch V1.31",155
+	.BYTE "Highspeed SIO patch V1.32",155
 .endif
 	.BYTE "(c) 2020 by Matthias Reichl",155,155
 TTITL	= * - TTIT

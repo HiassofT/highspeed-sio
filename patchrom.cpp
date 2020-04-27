@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 	int idx = 1;
 	size_t read_len;
 
-	printf("patchrom V1.31 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.32 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
 
 	if (argc < 2) {
 		goto usage;

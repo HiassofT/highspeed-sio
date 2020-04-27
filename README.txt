@@ -1,4 +1,4 @@
-Highspeed SIO patch V1.31 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.32 for Atari XL/XE OS and MyIDE OS
 
 Copyright (c) 2006-2020 Matthias Reichl <hias@horus.com>
 
