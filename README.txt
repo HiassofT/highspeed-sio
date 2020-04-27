@@ -1,6 +1,6 @@
-Highspeed SIO patch V1.30 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.31 for Atari XL/XE OS and MyIDE OS
 
-Copyright (c) 2006-2010 Matthias Reichl <hias@horus.com>
+Copyright (c) 2006-2020 Matthias Reichl <hias@horus.com>
 
 This program is proteced under the terms of the GNU General Public
 License, version 2. Please read LICENSE for further details.
@@ -252,6 +252,18 @@ is the case, the drive is most certainly a Happy 1050 and a $48 command
 with DAUX=$0020 is sent. This enables fast writes and is needed
 by the Happy drives, otherwise they might write corrupted data to
 the disk when writing in highspeed mode (thanks to ijor for this info!).
+
+After that a $53 (get status) command is sent in standard speed. This
+is needed to work around issues with the Percom AT88-S1 drive (and
+maybe others) which spins up on get status and would fail to boot
+due to the following get status checks. The SIO detection code bails
+out early, issues the other highspeed checks and issues the actual SIO
+command all while the drive is still busy spinning up and won't react
+to any of the commands - including the actual get status check issued
+by OS boot code.
+
+If the get status check fails the following highspeed checks are skipped.
+This speeds up highspeed detection if no drive is present.
 
 Then, the code tries to send a $53 command (get status) in 1050 Turbo
 and XF551 mode. If it's a 1050 Turbo, $80 is stored in the speed table,
