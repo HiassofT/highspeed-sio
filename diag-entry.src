@@ -1,0 +1,228 @@
+;  Highspeed SIO patch entry point test
+;
+
+	.include "hisio.inc"
+	.include "hipatch.inc"
+	.include "cio.inc"
+
+DRIVENO = 2
+TBYT	= $100
+TCMD	= 'R
+TDIR	= $40
+
+; highspeed SIO mode to use
+HIMODE	= $08
+
+START	= $1000
+BUF	= $0800
+
+TMPVEC	= $E0
+
+	* = START-16
+
+;************************************
+; ATR file header
+
+	.WORD $0296 ; magic
+	.WORD (END-START+15)/16
+	.WORD 128
+	.WORD 0,0,0,0,0
+
+
+;************************************
+; boot header complete file
+
+	.BYTE 0
+	.BYTE (END-START+127)/128
+	.WORD START
+	.WORD XRTS
+       
+; check for highspeed patch presence in OS
+MAIN
+	BPUT 0, MTXTL, MTXT
+
+	LDA PVER
+	CMP #'H
+	BNE NOPATCH
+	LDA PVER+1
+	CMP #'i
+	BNE NOPATCH
+	LDA PVER+2
+	CMP #'a
+	BNE NOPATCH
+	LDA PVER+3
+	CMP #'s
+	BNE NOPATCH
+	LDA PVER+4
+	CMP #32
+	BNE NOPATCH
+	LDA PVER+5
+	CMP #'0
+	BCC NOPATCH
+	CMP #'9+1
+	BCS NOPATCH
+	LDA PVER+6
+	CMP #'.
+	BNE NOPATCH
+	LDA PVER+7
+	CMP #'0
+	BCC NOPATCH
+	CMP #'9+1
+	BCS NOPATCH
+	LDA PVER+8
+	CMP #'0
+	BCC NOPATCH
+	CMP #'9+1
+	BCS NOPATCH
+	LDA PVER+9
+	CMP #32
+	BEQ FOUNDPATCH
+
+NOPATCH
+	BPUT 0, TNOPATCHL, TNOPATCH
+	JMP TEND
+
+FOUNDPATCH
+	BPUT 0, TFOUNDL, TFOUND
+
+	BPUT 0, 11, PVER+5
+	LDA #155
+	JSR PUTCHR
+
+; now check if version >= 1.32
+
+	LDA PVER+5
+	CMP #'1
+	BCC OLDPATCH
+	BNE PATCHOK
+
+	LDA PVER+7
+	CMP #'3
+	BCC OLDPATCH
+	BNE PATCHOK
+
+	LDA PVER+8
+	CMP #'2
+	BCS PATCHOK
+
+OLDPATCH
+	BPUT 0, TOLDL, TOLD
+	JMP TEND
+
+PATCHOK
+	BPUT 0, TVEROKL, TVEROK
+
+; set SIO parameters
+
+	LDA #$31
+	STA DDEVIC
+	LDA #DRIVENO
+	STA DUNIT
+	LDA #TCMD
+	STA DCOMND
+	LDA #<BUF
+	STA DBUFLO
+	LDA #>BUF
+	STA DBUFHI
+	LDA #7
+	STA DTIMLO
+	LDA #<TBYT
+	STA DBYTLO
+	LDA #>TBYT
+	STA DBYTHI
+
+
+; read sectors 4-720 in a loop forever
+
+TLOOP0	
+	LDA #4
+	STA DAUX1
+	LDA #0
+	STA DAUX2
+
+TLOOP	LDA 53279
+	CMP #6
+	BEQ TLOOP
+
+	LDA #TDIR
+	STA DSTATS
+
+	LDA #HIMODE
+	JSR PHISIO
+	BMI TERROR
+
+	LDA 53279
+	CMP #3
+	BEQ TEND
+
+	INC DAUX1
+	BNE TLOOP1
+	INC DAUX2
+TLOOP1	LDA DAUX2
+	CMP #2
+	BNE TLOOP
+	LDA DAUX1
+	CMP #$D1
+	BNE TLOOP
+	JMP TLOOP0
+
+TERROR
+	BPUT 0, TERRL, TERR
+
+TEND	BPUT 0, TAGAL, TAGA
+
+	JSR GETKEY
+	CMP #27
+	BEQ EXIT
+	JMP MAIN
+
+EXIT	JMP $E477
+
+PUTCHR	TAY
+	LDA $E407
+	PHA
+	LDA $E406
+	PHA
+	TYA
+	RTS
+
+GETKEY  LDA $E425
+	PHA
+	LDA $E424
+	PHA
+XRTS	RTS
+
+MTXT	.BYTE 125
+	.BYTE "highspeed SIO entry test",155
+MTXTL	= * - MTXT
+
+TNOPATCH
+	.BYTE "patch not detected",155
+TNOPATCHL	= * - TNOPATCH
+
+TFOUND
+	.BYTE "patch detected: "
+TFOUNDL	= * - TFOUND
+
+TOLD
+	.BYTE "patch is too old", 155
+TOLDL	= * - TOLD
+
+TVEROK
+	.BYTE "Version OK, starting test",155
+TVEROKL	= * - TVEROK
+
+TERR	.BYTE "Error, aborting test",155
+TERRL	= * - TERR
+
+TAGA	.BYTE 155, "press ESC to reboot or any",155
+	.BYTE "other key to restart test",155
+TAGAL	= * - TAGA
+
+; assemble highspeed code at identical page-boundaries as hipatch code
+
+	.IF (*&127)<>0
+	.DC (128-(*&127)) 0
+	.ENDIF
+
+END	= *

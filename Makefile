@@ -73,6 +73,8 @@ diag-ext-write.atr: diag.src $(HISIOSRC)
 diag-hias-write.atr: diag.src $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dDIAG_WRITE=1 -r -o$@ $<
 
+diag-entry.atr: diag-entry.src hisio.inc hipatch.inc cio.inc
+	$(ATASM) $(ATASMFLAGS) -f0 -r -o$@ $<
 
 test.com: test.src hi4000.com
 	$(ATASM) $(ATASMFLAGS) -otest1.com test.src
