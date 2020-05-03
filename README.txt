@@ -278,7 +278,7 @@ If none of the highspeed SIO variants worked, the SIO detection code
 assumes it is a stock drive that only operates at standard SIO speed
 and stores a $28 (pokey divisor for ~19kbps) in the speed table.
 
-Once the SIO speed and type as been determined, only the code in
+Once the SIO speed and type has been determined, only the code in
 hisiocode.src is used.
 
 
@@ -369,7 +369,7 @@ In case of an ACK, the SIO protocol proceeds like this:
 If bit 7 of DSTATS is set (meaning transmission from the computer
 to the device), the computer sends the data frame (eg the sector
 data plus the checksum byte) to the device and again waits for an
-ACK or NAK. The devices now verifies the checksum and transmits
+ACK or NAK. The device now verifies the checksum and transmits
 either an ACK (if the checksum is OK) or a NAK. In case of a NAK
 the next steps are skipped.
 
