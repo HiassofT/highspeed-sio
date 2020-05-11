@@ -116,5 +116,10 @@ PKEYX	PLA
 	JMP DOHIENTRY
 
 	* = PVER
-	.BYTE "Hias 1.32 200428"
+	.BYTE "Hias 1.32 "
+.if .def BT
+	.BYTE "SIO2BT"
+.else
+	.BYTE "200428"
+.endif
 
