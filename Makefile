@@ -16,7 +16,7 @@ CXXFLAGS = -W -Wall -g
 MINGW_CXX=i686-w64-mingw32-g++
 MINGW_STRIP=i686-w64-mingw32-strip
 
-HISIOSRC=hisio.src hisiodet.src hisio.inc \
+HISIOSRC=hisio.src hisiodet.src hisiodetbt.src hisio.inc \
 	hisiocode.src \
 	hisiocode-break.src hisiocode-cleanup.src hisiocode-main.src \
 	hisiocode-send.src hisiocode-check.src hisiocode-diag.src \
@@ -36,6 +36,8 @@ hipatch-code.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 hipatch-code-rom.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
+hipatch-code-rom-bt.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dBT=1 -r -o$@ hipatch-code.src
 
 hisio.com: hipatch.src hipatch-code.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -o$@ $<
@@ -89,12 +91,15 @@ hipatch.atr: $(COMS)
 hicode.h: hipatch-code-rom.bin
 	xxd -i hipatch-code-rom.bin > hicode.h
 
-patchrom.o: patchrom.cpp patchrom.h hicode.h
+hicodebt.h: hipatch-code-rom-bt.bin
+	xxd -i hipatch-code-rom-bt.bin > hicodebt.h
+
+patchrom.o: patchrom.cpp patchrom.h hicode.h hicodebt.h
 
 patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
-patchrom.exe: patchrom.cpp patchrom.h hicode.h
+patchrom.exe: patchrom.cpp patchrom.h hicode.h hicodebt.h
 	$(MINGW_CXX) $(CXXFLAGS) -o patchrom.exe patchrom.cpp
 	$(MINGW_STRIP) patchrom.exe
 

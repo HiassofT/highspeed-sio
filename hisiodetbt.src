@@ -1,0 +1,184 @@
+;  highsiodetbt.src - check for SIO2BT and highspeed drives
+;
+;  Copyright (c) by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2019-2020 by Marcin Sochacki <marcin.sochacki@gmx.net>
+;
+;  This program is free software; you can redistribute it and/or modify
+;  it under the terms of the GNU General Public License as published by
+;  the Free Software Foundation; either version 2 of the License, or
+;  (at your option) any later version.
+;
+;  This program is distributed in the hope that it will be useful,
+;  but WITHOUT ANY WARRANTY; without even the implied warranty of
+;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;  GNU General Public License for more details.
+;
+;  You should have received a copy of the GNU General Public License
+;  along with this program; if not, write to the Free Software
+;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+;
+
+HISIO
+
+	CLC
+	LDA DDEVIC	;device ID
+	ADC DUNIT	;add unit number
+	ADC #$FF	;subtract 1
+	STA CDEVIC	;device bus ID
+
+?DOSIO	JSR ?GETHSINDEX
+	BEQ ?DOCHK
+
+	SEC		; bytes in SIO table are now speed+1
+	SBC #1		; to prevent endless loop in case device sends speed byte 0
+DOHIENTRY
+?ABS03	STA SIOSPEED
+?ABS04	JMP DOHISIO
+
+?DOCHK	
+
+?ABS05	
+	LDY #$09
+?SAVCMD	LDA DCOMND,Y
+	PHA 
+?ABS06	LDA ?CMD3F,Y	; Happy/Speedy Ultra SIO mode?
+	STA DCOMND,Y
+	DEY 
+	BPL ?SAVCMD
+
+	LDA #BT576K	; test divisor $08 (SIO2BT 57.6Kbps)
+	JSR ?GETST
+	BPL ?SETSPD
+	CPY #ERRNAK
+	BEQ ?SETSPD
+
+	LDA #STDSPD
+	JSR ?GETST
+	BPL ?TESTHISIO
+	CPY #ERRNAK
+	BEQ ?TESTHISIO
+	LDA #$FF	; don't set speed if device timed out
+	STA SIOSPEED
+	BNE ?RESCMD
+
+?TESTHISIO
+	LDY #$09	; reinstate the speed poll command since get status wiped it out
+?SAVCMD2
+	LDA ?CMD3F,Y	; Happy/Speedy Ultra SIO mode?
+	STA DCOMND,Y
+	DEY
+	BPL ?SAVCMD2
+?ABS07	JSR ?DODET
+
+	; for testing happy 810 mode, change BMI into JMP and connect a happy 1050
+	BMI ?NOULTRA
+
+?ABS08	LDA HIBUF
+	CMP #$0A	; speed byte $0A is most certainly a Happy 1050
+	BNE ?SETSP2
+
+	; enable fast write for Happy 1050 (but not for other drives),
+	; otherwise data might be corrupted
+	; stupid, stupid Happy...
+?ABS09	JSR ?CHKHAP
+
+?ABS10	LDA HIBUF
+?ABS11	JMP ?SETSP2
+
+?NOULTRA 
+.if .not .def USONLY
+?ABS12A	JSR ?GETST2
+	BMI ?CHKNOHI	; bail out early if drive is not responding
+
+	LDA #TURFLG	; Turbo 1050?
+?ABS12	JSR ?GETST
+	BPL ?SETSPD
+
+	LDA #XFFLG	; XF551?
+?ABS13	JSR ?GETST
+	BPL ?SETSPD
+
+	LDA #HAPFLG	; Happy 810?
+?ABS14	STA SIOSPEED
+?ABS15	JSR ?CHKHAP
+	BPL ?SETSPD
+.endif
+
+?CHKNOHI
+	LDA #STDSPD	; no, just use standard SIO speed
+	BNE ?SETSP2
+
+.if .not .def USONLY
+?GETST
+?ABS16	STA SIOSPEED
+
+?GETST2
+	LDA #4
+	STA DBYTLO
+	LDX #$53
+	LDA #$40
+.endif
+?DOIMM	STX DCOMND
+	STA DSTATS
+?DODET	LDA #1
+	LDX #DETCRETRY
+?ABS17	JMP DOHIDET
+
+?CHKHAP	LDX #$48	; check for happy 810
+	LDA #0
+	BEQ ?DOIMM
+
+.if .not .def USONLY
+?SETSPD
+?ABS18	LDA SIOSPEED
+.endif
+
+?SETSP2
+	CLC		; add 1 to value to prevent endless loop
+	ADC #1		; if device sends a speed byte of 0
+	JSR ?STOREHSINDEX
+
+?RESCMD	LDY #$00
+?RESLP	PLA 
+	STA DCOMND,Y
+	INY 
+	CPY #$0A
+	BCC ?RESLP
+
+	LDA SIOSPEED
+	CMP #$FF
+	BNE ?ABS20
+	LDA #ERRTO	; if speed byte is $FF, drive is offline so just return NAK
+	STA STATUS
+	JMP ?NOWRAP
+?ABS20	JMP ?DOSIO
+
+	; Retrieve HSIndex for CDEVIC
+	; Returns HSIndex+1 in A or 0 in zero flag if not present
+?GETHSINDEX
+	LDY #SPEEDTBSIZE
+?Loop	LDA DEVICETB-1,Y
+	CMP CDEVIC
+	BEQ ?Found
+	DEY
+	BNE ?Loop
+	RTS
+?Found	LDA SPEEDTB-1,Y		; found device, so get HSIndex
+	RTS
+
+	; Store HSIndex for CDEVIC
+	; Oldest entries are overwritten
+	; Pass speed in A
+?STOREHSINDEX
+	LDY NEXTSPEEDSLOT	; this will be 0-3
+	STA SPEEDTB,Y
+	LDA CDEVIC
+	STA DEVICETB,Y
+	INY
+	TYA
+	AND #SPEEDTBSIZE-1
+	STA NEXTSPEEDSLOT
+	RTS
+
+?CMD3F	.BYTE $3F,$40
+?ABS21	.WORD HIBUF,2,1,$20

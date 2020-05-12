@@ -35,7 +35,13 @@
 	DRETRY = $39	; data frame retries
 
 ; default number of command frame retries
+.if .def BT
+	DEFCRETRY = $05
+	T2TIMEOUT = $10
+.else
 	DEFCRETRY = $0E
+	T2TIMEOUT = $02
+.endif
 
 ; number of command frame retries when checking highspeed mode
 	DETCRETRY = $05
