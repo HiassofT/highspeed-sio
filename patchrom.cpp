@@ -117,12 +117,14 @@ static bool rom_checksums_ok(bool is_xl)
 {
 	unsigned int csum;
 
-	if (is_xl) {
-		csum = get_csum1();
-		if (rombuf[CSUM1_ADR - ROMBASE] != (csum & 0xff) ||
-		    rombuf[CSUM1_ADR +1 - ROMBASE] != (csum >> 8)) {
-		       return false;
-		}
+	if (!is_xl) {
+		return false; // not implemented yet
+	}
+
+	csum = get_csum1();
+	if (rombuf[CSUM1_ADR - ROMBASE] != (csum & 0xff) ||
+	    rombuf[CSUM1_ADR +1 - ROMBASE] != (csum >> 8)) {
+	       return false;
 	}
 
 	csum = get_csum2();
@@ -137,11 +139,13 @@ static void update_rom_checksums(bool is_xl)
 {
 	unsigned int csum;
 
-	if (is_xl) {
-		csum = get_csum1();
-		rombuf[CSUM1_ADR - ROMBASE] = csum & 0xff;
-		rombuf[CSUM1_ADR +1 - ROMBASE] = csum >> 8;
+	if (!is_xl) {
+		return; // not implemented yet
 	}
+
+	csum = get_csum1();
+	rombuf[CSUM1_ADR - ROMBASE] = csum & 0xff;
+	rombuf[CSUM1_ADR +1 - ROMBASE] = csum >> 8;
 
 	csum = get_csum2();
 	rombuf[CSUM2_ADR - ROMBASE] = csum & 0xff;
@@ -247,7 +251,11 @@ int main(int argc, char** argv)
 		}
 	}
 
-	need_csum_update = rom_checksums_ok(is_xl);
+	if (is_xl) {
+		need_csum_update = rom_checksums_ok(is_xl);
+	} else {
+		need_csum_update = false;
+	}
 
 	// copy highspeed SIO code to ROM OS
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
