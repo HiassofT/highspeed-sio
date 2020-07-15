@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
 
 #include "patchrom.h"
 #include "hicode.h"
@@ -170,36 +171,31 @@ int main(int argc, char** argv)
 	unsigned char* old_siocode;
 	bool is_xl = true;
 
-	int idx = 1;
+	int opt;
 	size_t read_len;
 
-	printf("patchrom V1.32 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.33 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
 
-	if (argc < 2) {
+	while ((opt = getopt(argc, argv, "bkp")) != -1) {
+		switch(opt) {
+		case 'b':
+			sio2bt = true;
+			break;
+		case 'k':
+			patch_keyirq = false;
+			break;
+		case 'p':
+			patch_powerup = false;
+			break;
+		}
+	}
+
+	if (argc != optind+2) {
 		goto usage;
 	}
 
-	if (argv[idx][0] == '-' && argv[idx][1] == 'b') {
-		sio2bt = true;
-		idx++;
-	}
-
-	if (argv[idx][0] == '-' && argv[idx][1] == 'k') {
-		patch_keyirq = false;
-		idx++;
-	}
-
-	if (argv[idx][0] == '-' && argv[idx][1] == 'p') {
-		patch_powerup = false;
-		idx++;
-	}
-
-	if (idx+2 != argc) {
-		goto usage;
-	}
-
-	origfile = argv[idx++];
-	newfile = argv[idx++];
+	origfile = argv[optind++];
+	newfile = argv[optind++];
 
 	FILE* f;
 	if (!(f=fopen(origfile,"rb"))) {
