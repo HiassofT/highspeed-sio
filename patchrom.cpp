@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-bcCkp]] original.rom new.rom\n");
+	printf("usage: patchrom [-bcCkp]] original.rom [new.rom]\n");
 	printf("options:\n");
 	printf("  -b  SIO2BT support (disables keyboard IRQ handler)\n");
 	printf("  -c  don't patch, only verify XL/XE ROM checksums\n");
