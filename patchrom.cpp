@@ -113,26 +113,53 @@ static unsigned int get_csum2()
 }
 
 /* check if the ROM checksums are OK */
-static bool rom_checksums_ok(bool is_xl)
+static bool rom_checksums_ok(bool is_xl, bool verbose = false)
 {
-	unsigned int csum;
+	unsigned int csum, csum_calc;
+	bool ok = true;
 
 	if (!is_xl) {
+		if (verbose) {
+			printf("verifying 10k rev A/B checksums isn't implemented yet\n");
+		}
 		return false; // not implemented yet
 	}
 
-	csum = get_csum1();
-	if (rombuf[CSUM1_ADR - ROMBASE] != (csum & 0xff) ||
-	    rombuf[CSUM1_ADR +1 - ROMBASE] != (csum >> 8)) {
-	       return false;
+	csum = rombuf[CSUM1_ADR - ROMBASE] | (rombuf[CSUM1_ADR + 1 - ROMBASE] << 8);
+	csum_calc = get_csum1();
+
+	if (verbose) {
+		printf("checksum at %04X: %04X", CSUM1_ADR, csum);
+	}
+	if (csum == csum_calc) {
+		if (verbose) {
+			printf(" OK\n");
+		}
+	} else {
+		if (verbose) {
+			printf(" ERROR, should be %04X\n", csum_calc);
+		}
+		ok = false;
 	}
 
-	csum = get_csum2();
-	if (rombuf[CSUM2_ADR - ROMBASE] != (csum & 0xff) ||
-	    rombuf[CSUM2_ADR +1 - ROMBASE] != (csum >> 8)) {
-	       return false;
+	csum = rombuf[CSUM2_ADR - ROMBASE] | (rombuf[CSUM2_ADR + 1 - ROMBASE] << 8);
+	csum_calc = get_csum2();
+
+	if (verbose) {
+		printf("checksum at %04X: %04X", CSUM2_ADR, csum);
 	}
-	return true;
+	if (csum == csum_calc) {
+		if (verbose) {
+			printf(" OK\n");
+		}
+	} else {
+		if (verbose) {
+			printf(" ERROR, should be %04X\n", csum_calc);
+		}
+		ok = false;
+	}
+
+	return ok;
 }
 
 static void update_rom_checksums(bool is_xl)
@@ -150,6 +177,33 @@ static void update_rom_checksums(bool is_xl)
 	csum = get_csum2();
 	rombuf[CSUM2_ADR - ROMBASE] = csum & 0xff;
 	rombuf[CSUM2_ADR +1 - ROMBASE] = csum >> 8;
+}
+
+static int fix_checksum(bool is_xl, const char* outfile) {
+	if (!is_xl) {
+		printf("fixing 10k rev A/B checksums isn't implemented yet\n");
+		return 1;
+	}
+
+	update_rom_checksums(is_xl);
+	if (!rom_checksums_ok(is_xl)) {
+		printf("internal error - updating ROM checksums failed!\n");
+		return 1;
+	}
+
+	FILE* f;
+	if (!(f = fopen(outfile, "wb"))) {
+		printf("cannot create %s\n", outfile);
+		return 1;
+	}
+	if (fwrite(rombuf, 1, ROMLEN, f) != ROMLEN) {
+		printf("error writing %s\n", outfile);
+		fclose(f);
+		return 1;
+	}
+	fclose(f);
+	printf("successfully created ROM %s\n", outfile);
+	return 0;
 }
 
 static bool check_already_patched()
@@ -178,12 +232,26 @@ int main(int argc, char** argv)
 	int opt;
 	size_t read_len;
 
+	enum EOpMode {
+		eOpPatch,
+		eOpVerifyChecksum,
+		eOpFixChecksum
+	};
+
+	EOpMode opmode = eOpPatch;
+
 	printf("patchrom V1.33 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
 
-	while ((opt = getopt(argc, argv, "bkp")) != -1) {
+	while ((opt = getopt(argc, argv, "bcCkp")) != -1) {
 		switch(opt) {
 		case 'b':
 			sio2bt = true;
+			break;
+		case 'c':
+			opmode = eOpVerifyChecksum;
+			break;
+		case 'C':
+			opmode = eOpFixChecksum;
 			break;
 		case 'k':
 			patch_keyirq = false;
@@ -194,12 +262,22 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if (argc != optind+2) {
-		goto usage;
+	switch (opmode) {
+	case eOpVerifyChecksum:
+		if (argc != optind+1) {
+			goto usage;
+		}
+		origfile = argv[optind++];
+		newfile = NULL;
+		break;
+	default:
+		if (argc != optind+2) {
+			goto usage;
+		}
+		origfile = argv[optind++];
+		newfile = argv[optind++];
+		break;
 	}
-
-	origfile = argv[optind++];
-	newfile = argv[optind++];
 
 	FILE* f;
 	if (!(f=fopen(origfile,"rb"))) {
@@ -224,6 +302,16 @@ int main(int argc, char** argv)
 		}
 	}
 	fclose(f);
+
+	switch (opmode) {
+	case eOpVerifyChecksum:
+		return rom_checksums_ok(is_xl, true);
+	case eOpFixChecksum:
+		return fix_checksum(is_xl, newfile);
+	default:
+		break;
+	}
+
 	if (check_already_patched()) {
 		printf("%s is already patched\n", origfile);
 		return 1;
@@ -324,9 +412,11 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-b] [-k] [-p] original.rom new.rom\n");
+	printf("usage: patchrom [-bcCkp]] original.rom new.rom\n");
 	printf("options:\n");
 	printf("  -b  SIO2BT support (disables keyboard IRQ handler)\n");
+	printf("  -c  don't patch, only verify XL/XE ROM checksums\n");
+	printf("  -C  don't patch, only fix XL/XE ROM checksums\n");
 	printf("  -k  don't patch keyboard IRQ handler\n");
 	printf("  -p  don't patch powerup/reset code\n");
 	return 1;
