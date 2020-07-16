@@ -424,7 +424,7 @@ usage:
 	printf("options:\n");
 	printf("  -b  SIO2BT support (disables keyboard IRQ handler)\n");
 	printf("  -c  don't patch, only verify XL/XE ROM checksums\n");
-	printf("  -C  don't patch, only fix XL/XE ROM checksums\n");
+	printf("  -C  don't patch, only update XL/XE ROM checksums\n");
 	printf("  -f  force ROM checksum update\n");
 	printf("  -k  don't patch keyboard IRQ handler\n");
 	printf("  -p  don't patch powerup/reset code\n");
