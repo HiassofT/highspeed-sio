@@ -217,6 +217,7 @@ int main(int argc, char** argv)
 	char* origfile;
 	char* newfile;
 	bool need_csum_update;
+	bool force_csum_update = false;
 
 	bool patch_keyirq = true;
 	bool patch_powerup = true;
@@ -242,7 +243,7 @@ int main(int argc, char** argv)
 
 	printf("patchrom V1.33 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
 
-	while ((opt = getopt(argc, argv, "bcCkp")) != -1) {
+	while ((opt = getopt(argc, argv, "bcCfkp")) != -1) {
 		switch(opt) {
 		case 'b':
 			sio2bt = true;
@@ -252,6 +253,9 @@ int main(int argc, char** argv)
 			break;
 		case 'C':
 			opmode = eOpFixChecksum;
+			break;
+		case 'f':
+			force_csum_update = true;
 			break;
 		case 'k':
 			patch_keyirq = false;
@@ -341,6 +345,10 @@ int main(int argc, char** argv)
 
 	if (is_xl) {
 		need_csum_update = rom_checksums_ok(is_xl);
+		if (!need_csum_update && force_csum_update) {
+			need_csum_update = true;
+			printf("wrong checksum in input ROM, update forced\n");
+		}
 	} else {
 		need_csum_update = false;
 	}
@@ -390,12 +398,12 @@ int main(int argc, char** argv)
 	}
 
 	if (need_csum_update) {
-		//printf("updating ROM checksums\n");
 		update_rom_checksums(is_xl);
 		if (!rom_checksums_ok(is_xl)) {
 			printf("internal error - updating ROM checksums failed!\n");
 			return 1;
 		}
+		printf("updated ROM checksums\n");
 	}
 
 	if (!(f = fopen(newfile, "wb"))) {
@@ -412,11 +420,12 @@ int main(int argc, char** argv)
 
 	return 0;
 usage:
-	printf("usage: patchrom [-bcCkp]] original.rom [new.rom]\n");
+	printf("usage: patchrom [-bcCfkp]] original.rom [new.rom]\n");
 	printf("options:\n");
 	printf("  -b  SIO2BT support (disables keyboard IRQ handler)\n");
 	printf("  -c  don't patch, only verify XL/XE ROM checksums\n");
 	printf("  -C  don't patch, only fix XL/XE ROM checksums\n");
+	printf("  -f  force ROM checksum update\n");
 	printf("  -k  don't patch keyboard IRQ handler\n");
 	printf("  -p  don't patch powerup/reset code\n");
 	return 1;
