@@ -1,4 +1,4 @@
-Highspeed SIO patch V1.32 for Atari XL/XE OS and MyIDE OS
+Highspeed SIO patch V1.33 for Atari XL/XE OS and MyIDE OS
 
 Copyright (c) 2006-2020 Matthias Reichl <hias@horus.com>
 
@@ -148,6 +148,35 @@ patchrom -k -p xl.rom xlhi2.rom
 
 Now you can use your EPROM programmer to create a ROM replacement for
 your Atari.
+
+* ROM checksum handling in patchrom
+
+patchrom can also be used to verify and/or update the checksums which
+are present in the original XL/XE ROMs (but eg not in MyIDE ROMs).
+
+By default it verifies if the checksums in the input ROM and if they
+are correct it will update them in the patched ROM. This makes sure
+patched original XL/XE ROMs and MyIDE ROMs will always be bootable.
+
+To assist people wanting to manually patch OS ROMs patchrom provides
+3 additional options:
+
+Option "-c" verifies if the checksums are correct and outputs the
+current and computed values. eg:
+
+patchrom -c my.rom
+
+Option "-C" updates the checksums to the correct values, but does not
+apply the highspeed SIO patch. This is intended to make a manually
+patched original XL/XE ROM bootable. eg:
+
+patchrom -C my.rom my-bootable.rom
+
+Option "-f" forces the checksums to be updated after applying the
+highspeed SIO patch. This is intended to be used to add the highspeed
+SIO patch to a manually patched original XL/XE ROM. eg:
+
+patchrom -f my.rom my-hi.rom
 
 
 3. Technical details
