@@ -100,7 +100,7 @@ patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
 patchrom.exe: patchrom.cpp patchrom.h hicode.h hicodebt.h
-	$(MINGW_CXX) $(CXXFLAGS) -o patchrom.exe patchrom.cpp
+	$(MINGW_CXX) $(CXXFLAGS) -static -o patchrom.exe patchrom.cpp
 	$(MINGW_STRIP) patchrom.exe
 
 atarisio: atarisio-highsio.bin atarisio-highsio-all.bin
