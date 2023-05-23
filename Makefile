@@ -6,7 +6,7 @@ all: hipatch.atr patchrom patchrom.exe \
  hisioboot.atr hisioboot-atarisio.atr
 
 ATASM ?= atasm
-ATASMFLAGS=
+ATASMFLAGS ?=
 #ATASMFLAGS=-s
 #ATASMFLAGS=-s -v
 
