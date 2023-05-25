@@ -1,6 +1,6 @@
 ;  highsiocode-vbi.src - highspeed SIO routine, optional fast VBI code
 ;
-;  Copyright (c) 2003-2010 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2023 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -45,7 +45,17 @@ VBICODE
 
 	BEQ ?RUNTIM	; timer reached 0, start timeout code
 
-?NOTOUT	
+?NOTOUT
+
+; ensure the critical VBICODE doesn't cross a page boundary
+.if [ * & $FF00 ] <> [ VBICODE & $FF00 ]
+.if .def ALLOW_PAGE_CROSSING
+        .warn "VBICODE crosses a page boundary!"
+.else
+        .error "VBICODE crosses a page boundary! Set ALLOW_PAGE_CROSSING to make this a warning"
+.endif
+.endif
+
 ; note: to save 6 additional cycles we don't use "JMP XITVBV" here
 ; but implement the OS code directly. This code is identical in all
 ; OS versions I know of.

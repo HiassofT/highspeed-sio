@@ -1,6 +1,6 @@
 ;  highsiocode-receive.src - highspeed SIO routine, receive byte/block code
 ;
-;  Copyright (c) 2003-2010 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2023 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -61,6 +61,16 @@
 	BNE ?GETLP
 	LDA BFENHI
 	BNE ?GETLP
+
+; ensure the critical ?GETLP doesn't cross a page boundary
+.if [ * & $FF00 ] <> [ ?GETLP & $FF00 ]
+.if .def ALLOW_PAGE_CROSSING
+	.warn "?GETLP crosses a page boundary!"
+.else
+	.error "?GETLP crosses a page boundary! Set ALLOW_PAGE_CROSSING to make this a warning"
+.endif
+.endif
+
 	SEC
 ?ABS63	JSR ?GETBYT
 
