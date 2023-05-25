@@ -1,6 +1,6 @@
 ;  highsio.inc - definitions for highspeed SIO code
 ;
-;  Copyright (c) 2003-2010 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2023 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -81,7 +81,12 @@
 	DAUX1 = $30A
 	DAUX2 = $30B
 
+	AUDF1 = $D200
+	AUDC1 = $D201
+	AUDF2 = $D202
+	AUDC2 = $D203
 	AUDF3 = $D204
+	AUDC3 = $D205
 	AUDF4 = $D206
 	AUDC4 = $D207
 	AUDCTL = $D208
