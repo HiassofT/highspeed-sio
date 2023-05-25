@@ -68,7 +68,11 @@ STDSIO	= PSTD
 	BNE STDSIO
 	LDA DUNIT
 	BEQ STDSIO
+.if .def MAXDRIVENO
+	CMP #MAXDRIVENO+1
+.else
 	CMP #9
+.endif
 	BCS STDSIO
 
 	.include "hisiodet.src"
