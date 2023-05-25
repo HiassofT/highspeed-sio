@@ -1,6 +1,6 @@
 Highspeed SIO patch V1.33 for Atari XL/XE OS and MyIDE OS
 
-Copyright (c) 2006-2020 Matthias Reichl <hias@horus.com>
+Copyright (c) 2006-2023 Matthias Reichl <hias@horus.com>
 
 This program is proteced under the terms of the GNU General Public
 License, version 2. Please read LICENSE for further details.
@@ -335,7 +335,7 @@ $CFFF0-$CFFF: Highspeed Patch signature and version info
 
 These locations contain a 16-byte ASCII string in the format
 "Hias V.ER YYMMDD" where V.ER is the decimal version number
-(eg 1.32) and YYMMDD the date of the last code change.
+(eg 1.33) and YYMMDD the date of the last code change.
 
 To detect presence of the highspeed SIO patch it's recommended
 to verify that "Hias " (including the blank) is present in

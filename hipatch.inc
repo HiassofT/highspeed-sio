@@ -1,6 +1,6 @@
 ;  hipatch - 6502 high speed SIO code OS patch program
 ;
-;  Copyright (c) by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2006-2023 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by

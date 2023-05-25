@@ -1,6 +1,6 @@
 ;  hipatch - 6502 high speed SIO code OS patch program
 ;
-;  Copyright (c) by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2006-2023 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -467,7 +467,7 @@ TTIT
 .else
 	.BYTE 155
 .endif
-	.BYTE "Highspeed SIO patch V1.32R",155
+	.BYTE "Highspeed SIO patch V1.33R",155
 .else
 TTIT
 .if .def ATRBOOT
@@ -475,9 +475,9 @@ TTIT
 .else
 	.BYTE 155
 .endif
-	.BYTE "Highspeed SIO patch V1.32",155
+	.BYTE "Highspeed SIO patch V1.33",155
 .endif
-	.BYTE "(c) 2020 by Matthias Reichl",155,155
+	.BYTE "(c) 2023 by Matthias Reichl",155,155
 TTITL	= * - TTIT
 
 .if .def ATRBOOT

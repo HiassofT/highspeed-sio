@@ -1,7 +1,7 @@
 /*
    patchrom - patch existing ROM file with highspeed SIO code
 
-   (c) 2006-2020 by Matthias Reichl <hias@horus.com>
+   (c) 2006-2023 by Matthias Reichl <hias@horus.com>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -241,7 +241,7 @@ int main(int argc, char** argv)
 
 	EOpMode opmode = eOpPatch;
 
-	printf("patchrom V1.33 (c) 2006-2020 Matthias Reichl <hias@horus.com>\n");
+	printf("patchrom V1.33 (c) 2006-2023 Matthias Reichl <hias@horus.com>\n");
 
 	while ((opt = getopt(argc, argv, "bcCfkp")) != -1) {
 		switch(opt) {
