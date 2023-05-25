@@ -22,7 +22,6 @@ HISIOSRC=hisio.src hisiodet.src hisiodetbt.src hisio.inc \
 	hisiocode-send.src hisiocode-check.src hisiocode-diag.src \
 	hisiocode-receive.src hisiocode-vbi.src
 
-
 %.com: %.src
 	$(ATASM) $(ATASMFLAGS) -o$@ $<
 
@@ -106,11 +105,31 @@ patchrom.exe: patchrom.cpp patchrom.h hicode.h hicodebt.h
 atarisio: atarisio-highsio.bin atarisio-highsio-all.bin
 
 # build with ultraspeed only support
-atarisio-highsio.bin: hisio.src hisio.inc $(HISIOSRC)
+atarisio-highsio.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dUSONLY -dFASTVBI -dRELOCTABLE -dSTART=4096 -o$@ $<
 
-atarisio-highsio-all.bin: hisio.src hisio.inc $(HISIOSRC)
+# full highspeed code with FASTVBI, starting at beginning of a page
+check-highsio-page.bin: $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dSTART=4096 -o$@ $<
+
+# full highspeed code with FASTVBI and reloctable, starting at beginning of a page
+check-reloctable.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dRELOCTABLE -dSTART=4096 -o$@ $<
+
+# highspeed code without hisiodet, starting at $092A
+check-mypdos.bin: check-hisiocode.src $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dSTART=\$$092A -r -o$@ $<
+
+# full code without clock adjust, starting at $4009
+check-thecart.bin: $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dFASTVBI_NOCLOCK -dMAXDRIVENO=15 -dSTART=\$$04009 -r -o$@ $<
+
+check: hipatch-code.bin hipatch-code-rom.bin hipatch-code-rom-bt.bin \
+	atarisio-highsio.bin \
+	check-highsio-page.bin \
+	check-reloctable.bin \
+	check-mypdos.bin \
+	check-thecart.bin
 
 clean:
 	rm -f *.bin *.com *.atr *.o patchrom.exe patchrom
