@@ -1,6 +1,6 @@
 ;  highsiocode.src - highspeed SIO routine, base file
 ;
-;  Copyright (c) 2003-2009 by Matthias Reichl <hias@horus.com>
+;  Copyright (c) 2003-2023 by Matthias Reichl <hias@horus.com>
 ;
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
@@ -28,27 +28,17 @@
 ; code in "-receive" branches to the ?ERR* labels in "-check" and
 ; in "-break".
 
-.if .def HISIO_MYPICODOS
-; optimized layout for MyPicoDos, starting at $092a
-	.include "hisiocode-main.src"
-	.include "hisiocode-vbi.src"
-	.include "hisiocode-check.src"
-	.include "hisiocode-break.src"
-	.include "hisiocode-receive.src"
-	.include "hisiocode-cleanup.src"
-	.include "hisiocode-send.src"
-	.include "hisiocode-diag.src"
-.else
 ; standard layout, works for:
 ; - highspeed SIO patch
 ; - relocatable code starting at $xx00
+; - MyPicoDos with separate hisiodet and highspeed code starting at $092A
+
 	.include "hisiocode-main.src"
+	.include "hisiocode-send.src"
+	.include "hisiocode-cleanup.src"
 	.include "hisiocode-check.src"
 	.include "hisiocode-break.src"
 	.include "hisiocode-receive.src"
-	.include "hisiocode-cleanup.src"
-	.include "hisiocode-send.src"
-	.include "hisiocode-vbi.src"
 	.include "hisiocode-diag.src"
-.endif
+	.include "hisiocode-vbi.src"
 
