@@ -18,7 +18,8 @@
 ;
 
 ; NOTE: the code in hisiocode-receive.src (actually the part
-; starting from "?GETLP" up to the last "BNE ?GETLP") should
+; starting from "?GETLP" up to the last "BNE ?GETLP") and the
+; code in hisiocode-vbi.src (at least all branches) should
 ; not cross a page boundary, otherwise there's an increased
 ; chance for overruns at 126kbit/sec!
 ;
