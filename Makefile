@@ -102,7 +102,7 @@ patchrom.exe: patchrom.cpp patchrom.h hicode.h hicodebt.h
 	$(MINGW_CXX) $(CXXFLAGS) -static -o patchrom.exe patchrom.cpp
 	$(MINGW_STRIP) patchrom.exe
 
-atarisio: atarisio-highsio.bin atarisio-highsio-all.bin
+atarisio: atarisio-highsio.bin
 
 # build with ultraspeed only support
 atarisio-highsio.bin: $(HISIOSRC)
