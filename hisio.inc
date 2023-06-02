@@ -35,7 +35,7 @@
 	DRETRY = $39	; data frame retries
 
 ; default number of command frame retries
-.if .def BT
+.if .def SIO2BT
 	DEFCRETRY = $05
 	T2TIMEOUT = $10
 .else

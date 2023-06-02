@@ -29,8 +29,8 @@ HIPATCH = 1
 SIOSPEED = RAMBUF	; speed byte for current operation
 SPEEDTB	= RAMBUF+1	; 8-byte table for drive speeds
 
-.if .def BT
-SPEEDTBSIZE = 4     ; SPEEDTB size, table for device speeds has only 4-bytes (when BT defined)!
+.if .def SIO2BT
+SPEEDTBSIZE = 4     ; SPEEDTB size, table for device speeds has only 4-bytes (when SIO2BT defined)!
 BT576K = $08        ; HS Index for 57.600 Baud
 DEVICETB = RAMBUF+5	; 4-byte table for last accessed devices
 .endif
@@ -43,13 +43,13 @@ DEVICETB = RAMBUF+5	; 4-byte table for last accessed devices
   HIBUF = RAMBUF+9	; .. RAMBUF+12
 .endif
 
-.if .def BT
+.if .def SIO2BT
 NEXTSPEEDSLOT = HIBUF+4
 .endif
 
 ; address of reset handler
 .if .def ROMABLE
-    .if .def BT
+    .if .def SIO2BT
       RESETAD = NEXTSPEEDSLOT+1
     .else
       RESETAD = HIBUF+4	; after end of highspeed SIO data

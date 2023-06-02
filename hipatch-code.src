@@ -60,8 +60,8 @@ STDSIO	= PSTD
 	BNE STDSIO
 .endif
 
-.if .def BT
-	.include "hisiodetbt.src"
+.if .def SIO2BT
+	.include "hisiodet-sio2bt.src"
 .else
 	LDA DDEVIC
 	CMP #$31
@@ -121,7 +121,7 @@ PKEYX	PLA
 
 	* = PVER
 	.BYTE "Hias 1.33 "
-.if .def BT
+.if .def SIO2BT
 	.BYTE "SIO2BT"
 .else
 	.BYTE "230525"

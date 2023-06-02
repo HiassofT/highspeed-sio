@@ -25,7 +25,7 @@
 
 #include "patchrom.h"
 #include "hicode.h"
-#include "hicodebt.h"
+#include "hicode-sio2bt.h"
 
 static unsigned char rombuf[ROMLEN];
 
@@ -357,7 +357,7 @@ int main(int argc, char** argv)
 	memset(rombuf + HIBASE - ROMBASE, 0, HILEN);
 	if(sio2bt)
 	{
-		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_bt_bin, hipatch_code_rom_bt_bin_len);
+		memcpy(rombuf + HIBASE - ROMBASE, hipatch_code_rom_sio2bt_bin, hipatch_code_rom_sio2bt_bin_len);
 		if (memcmp(rombuf + PHR - ROMBASE, origPHRcode, origPHRcode_len) == 0) {
 			rombuf[PHR - ROMBASE] = 0x60; // RTS
 			printf("disabled PHR (for SIO2BT)\n");

@@ -7,4 +7,4 @@
 patchdisk/
 patchrom
 hicode.h
-hicodebt.h
+hicode-sio2bt.h

@@ -16,7 +16,7 @@ CXXFLAGS = -W -Wall -g
 MINGW_CXX=i686-w64-mingw32-g++
 MINGW_STRIP=i686-w64-mingw32-strip
 
-HISIOSRC=hisio.src hisiodet.src hisiodetbt.src hisio.inc \
+HISIOSRC=hisio.src hisiodet.src hisiodet-sio2bt.src hisio.inc \
 	hisiocode.src \
 	hisiocode-break.src hisiocode-cleanup.src hisiocode-main.src \
 	hisiocode-send.src hisiocode-check.src hisiocode-diag.src \
@@ -35,8 +35,8 @@ hipatch-code.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 hipatch-code-rom.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dPATCHKEY=1 -r -o$@ hipatch-code.src
 
-hipatch-code-rom-bt.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
-	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dBT=1 -r -o$@ hipatch-code.src
+hipatch-code-rom-sio2bt.bin: hipatch-code.src hipatch.inc $(HISIOSRC)
+	$(ATASM) $(ATASMFLAGS) -f0 -dFASTVBI=1 -dROMABLE=1 -dSIO2BT=1 -r -o$@ hipatch-code.src
 
 hisio.com: hipatch.src hipatch-code.bin hipatch.inc cio.inc
 	$(ATASM) $(ATASMFLAGS) -dPATCHKEY=1 -o$@ $<
@@ -90,15 +90,15 @@ hipatch.atr: $(COMS)
 hicode.h: hipatch-code-rom.bin
 	xxd -i hipatch-code-rom.bin > hicode.h
 
-hicodebt.h: hipatch-code-rom-bt.bin
-	xxd -i hipatch-code-rom-bt.bin > hicodebt.h
+hicode-sio2bt.h: hipatch-code-rom-sio2bt.bin
+	xxd -i hipatch-code-rom-sio2bt.bin > hicode-sio2bt.h
 
-patchrom.o: patchrom.cpp patchrom.h hicode.h hicodebt.h
+patchrom.o: patchrom.cpp patchrom.h hicode.h hicode-sio2bt.h
 
 patchrom: patchrom.o
 	$(CXX) -o patchrom patchrom.o
 
-patchrom.exe: patchrom.cpp patchrom.h hicode.h hicodebt.h
+patchrom.exe: patchrom.cpp patchrom.h hicode.h hicode-sio2bt.h
 	$(MINGW_CXX) $(CXXFLAGS) -static -o patchrom.exe patchrom.cpp
 	$(MINGW_STRIP) patchrom.exe
 
@@ -124,7 +124,7 @@ check-mypdos.bin: check-hisiocode.src $(HISIOSRC)
 check-thecart.bin: $(HISIOSRC)
 	$(ATASM) $(ATASMFLAGS) -dFASTVBI -dFASTVBI_NOCLOCK -dMAXDRIVENO=15 -dSTART=\$$04009 -r -o$@ $<
 
-check: hipatch-code.bin hipatch-code-rom.bin hipatch-code-rom-bt.bin \
+check: hipatch-code.bin hipatch-code-rom.bin hipatch-code-rom-sio2bt.bin \
 	atarisio-highsio.bin \
 	check-highsio-page.bin \
 	check-reloctable.bin \
